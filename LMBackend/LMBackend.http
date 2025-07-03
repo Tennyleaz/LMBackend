@@ -1,0 +1,6 @@
+@LMBackend_HostAddress = http://localhost:5271
+
+GET {{LMBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
