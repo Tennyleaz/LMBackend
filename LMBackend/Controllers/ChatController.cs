@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LMBackend.Models;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace LMBackend.Controllers;
 
@@ -126,17 +127,35 @@ public class ChatController : ControllerBase
 
         if (chat == null)
         {
-            Response.StatusCode = StatusCodes.Status404NotFound;
-            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }) + "\n");
-            await Response.Body.FlushAsync();
-            return;
+            if (Debugger.IsAttached)
+            {
+                chat = new ChatItem
+                {
+                    Id = id,
+                    Title = "New Chat",
+                    Messages = new List<ChatMessage>()
+                };
+            }
+            else
+            {
+                Response.StatusCode = StatusCodes.Status404NotFound;
+                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }) + "\n");
+                await Response.Body.FlushAsync();
+                return;
+            }
         }
 
         // Save user message
         chat.Messages.Add(request);
 
         // Call chatbot service (mock or OpenAI, etc.)
-        ChatMessage botMessage = new ChatMessage();
+        ChatMessage botMessage = new ChatMessage
+        {            
+            Id = Guid.NewGuid(),
+            Text = "This is a simulated bot response to: " + request.Text,
+            Role = Role.System,
+            Timestamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
         chat.Messages.Add(botMessage);
 
         // Simulate streaming a chatbot reply
