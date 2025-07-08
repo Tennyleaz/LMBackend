@@ -26,7 +26,11 @@ public class ChatController : ControllerBase
         _llmClient = new LlmClient(Constants.LLM_KEY, Constants.MODEL);
     }
 
-    // GET: api/Chat    
+    // GET: api/Chat
+    /// <summary>
+    /// Get all chats for this user.
+    /// </summary>
+    /// <returns></returns>
     [HttpGet]
     [Authorize]
     public async Task<ActionResult<IEnumerable<Chat>>> GetChats()
@@ -35,6 +39,11 @@ public class ChatController : ControllerBase
     }
 
     // GET: api/Chat/5
+    /// <summary>
+    /// Get a chat by id.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}")]
     [Authorize]
     public async Task<ActionResult<Chat>> GetChat(Guid id)
@@ -50,6 +59,11 @@ public class ChatController : ControllerBase
     }
 
     // GET: api/Chat/{chatId}/Messages
+    /// <summary>
+    /// Get all messages for given chat id.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id:guid}/messages")]
     [Authorize]
     public async Task<ActionResult<List<ChatMessage>>> GetChatMessages(Guid id)
@@ -66,6 +80,12 @@ public class ChatController : ControllerBase
 
     // PUT: api/Chat/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    /// <summary>
+    /// Modify chat title.
+    /// </summary>
+    /// <param name="id">Chat ID</param>
+    /// <param name="chatDto"></param>
+    /// <returns></returns>
     [HttpPut("{id}")]
     [Authorize]
     public async Task<IActionResult> PutChat(Guid id, Chat chatItem)
@@ -98,6 +118,11 @@ public class ChatController : ControllerBase
 
     // POST: api/Chat
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    /// <summary>
+    /// Create a new chat.
+    /// </summary>
+    /// <param name="chatDto"></param>
+    /// <returns></returns>
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<Chat>> PostChat(ChatDto chatDto)
@@ -128,6 +153,12 @@ public class ChatController : ControllerBase
     }
 
     // POST: api/Chat/{id}/Messages
+    /// <summary>
+    /// Create/append a new message, and get LLM response message.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="chatMessageDto"></param>
+    /// <returns></returns>
     [HttpPost("{id:guid}/messages")]
     [Authorize]
     public async Task<ActionResult<ChatMessage>> PostChatMessage(Guid id, ChatMessageDto chatMessageDto)
@@ -189,6 +220,12 @@ public class ChatController : ControllerBase
     }
 
     // POST: api/Chat/{id}/messages/stream-json
+    /// <summary>
+    /// Create/append a new message, and get LLM response message. Response in streaming format.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="request"></param>
+    /// <returns></returns>
     [HttpPost("{id:guid}/messages/stream-json")]
     [Authorize]
     public async Task StreamMessageAsJson(Guid id, [FromBody] ChatMessageDto request)
@@ -274,6 +311,11 @@ public class ChatController : ControllerBase
     }
 
     // DELETE: api/Chat/5
+    /// <summary>
+    /// Delete a chat by id.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpDelete("{id}")]
     [Authorize]
     public async Task<IActionResult> DeleteChat(Guid id)
