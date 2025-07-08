@@ -11,4 +11,14 @@ public class Chat
     public Guid UserId { get; set; }
     // navigation property of User object
     public virtual User User { get; set; }
+
+    public static Chat FromDto(ChatDto dto)
+    {
+        return new Chat
+        {
+            Id = dto.Id,
+            Title = dto.Title,
+            CreatedTime = dto.CreatedTime,
+        };
+    }
 }

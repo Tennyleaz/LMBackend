@@ -91,32 +91,99 @@ public class ChatController : ControllerBase
     // POST: api/Chat
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Chat>> PostChat(Chat chatItem)
+    [Authorize]
+    public async Task<ActionResult<Chat>> PostChat(ChatDto chatDto)
     {
-        _context.Chats.Add(chatItem);
+        // Get userId from JWT claims
+        Claim userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
+                     ?? User.FindFirst("sub"); // Try standard and JWT 'sub'
+        if (userIdClaim == null)
+        {
+            return Unauthorized();
+        }
+
+        // Check if chat id exists
+        if (_context.Chats.Any(x => x.Id == chatDto.Id))
+        {
+            return Conflict("Id: " + chatDto.Id);
+        }
+
+        Guid userId = Guid.Parse(userIdClaim.Value);
+        Chat chat = Chat.FromDto(chatDto);
+        chat.UserId = userId;
+        //chat.User = user;
+
+        _context.Chats.Add(chat);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction("GetChatItem", new { id = chatItem.Id }, chatItem);
+        return CreatedAtAction(nameof(GetChat), new { id = chat.Id }, chat);
     }
 
     // POST: api/Chat/{id}/Messages
     [HttpPost("{id:guid}/messages")]
-    public async Task<ActionResult<ChatMessage>> PostChatMessage(Guid id, ChatMessage chatMessage)
+    [Authorize]
+    public async Task<ActionResult<ChatMessage>> PostChatMessage(Guid id, ChatMessageDto chatMessageDto)
     {
         Chat parent = await _context.Chats.FindAsync(id);
         if (parent == null)
         {
-            return NotFound(parent.Id);
+            if (Debugger.IsAttached)
+            {
+                parent = new Chat
+                {
+                    Id = id,
+                    Title = "New Chat",
+                    Messages = new List<ChatMessage>()
+                };
+            }
+            else
+            {
+                return NotFound(parent.Id);
+            }
         }
 
+        // Ask LLM for answer
+        string answer;
+        try
+        {
+            answer = await _llmClient.GetChatResult(chatMessageDto.Text);
+        }
+        catch (AggregateException ex)
+        {
+            // 192.168.41.133 failed to connet?
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
+        // Add user's and LLM result into messages
+        ChatMessage chatMessage = ChatMessage.FromDto(chatMessageDto);
+        //chatMessage.Chat = parent;
+        chatMessage.ChatId = id;
         _context.ChatMessages.Add(chatMessage);
+
+        ChatMessage botMessage = new ChatMessage
+        {
+            Id = Guid.NewGuid(),
+            Text = answer,
+            Role = Role.System,
+            Timestamp = DateTimeOffset.UtcNow,
+            Chat = parent,
+            ChatId = id,
+        };
+        _context.ChatMessages.Add(botMessage);
+
+        // Returns the LLM message
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetChat), new { id = chatMessage.Id }, chatMessage);
+        return CreatedAtAction(nameof(GetChat), new { id = botMessage.Id }, botMessage);
     }
 
     // POST: api/Chat/{id}/messages/stream-json
     [HttpPost("{id:guid}/messages/stream-json")]
-    public async Task StreamMessageAsJson(Guid id, [FromBody] ChatMessage request)
+    [Authorize]
+    public async Task StreamMessageAsJson(Guid id, [FromBody] ChatMessageDto request)
     {
         // ndjson use newline to split JSON
         Response.ContentType = "application/x-ndjson";
@@ -147,7 +214,10 @@ public class ChatController : ControllerBase
         }
 
         // Save user message
-        chat.Messages.Add(request);
+        ChatMessage chatMessage = ChatMessage.FromDto(request);
+        //chatMessage.Chat = chat;
+        chatMessage.ChatId = id;
+        chat.Messages.Add(chatMessage);
 
         // Call chatbot service (mock or OpenAI, etc.)
         ChatMessage botMessage = new ChatMessage

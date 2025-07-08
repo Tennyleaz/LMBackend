@@ -11,4 +11,15 @@ public class ChatMessage
     public Guid ChatId { get; set; }
     // navigation property of Chat object
     public Chat Chat { get; set; }
+
+    public static ChatMessage FromDto(ChatMessageDto dto)
+    {
+        return new ChatMessage
+        {
+            Id = dto.Id,
+            Role = Role.User,
+            Text = dto.Text,
+            Timestamp = dto.Timestamp
+        };
+    }
 }
