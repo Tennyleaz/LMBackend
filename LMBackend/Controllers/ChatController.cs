@@ -1,13 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using LMBackend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using LMBackend.Models;
-using System.Text.Json;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Security.Claims;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace LMBackend.Controllers;
 
@@ -16,14 +18,17 @@ namespace LMBackend.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly ChatContext _context;
+    private readonly LlmClient _llmClient;
 
     public ChatController(ChatContext context)
     {
         _context = context;
+        _llmClient = new LlmClient(Constants.LLM_KEY, Constants.MODEL);
     }
 
-    // GET: api/Chat
+    // GET: api/Chat    
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<IEnumerable<Chat>>> GetChats()
     {
         return await _context.Chats.ToListAsync();
@@ -31,6 +36,7 @@ public class ChatController : ControllerBase
 
     // GET: api/Chat/5
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<ActionResult<Chat>> GetChat(Guid id)
     {
         var chatItem = await _context.Chats.FindAsync(id);
@@ -45,6 +51,7 @@ public class ChatController : ControllerBase
 
     // GET: api/Chat/{chatId}/Messages
     [HttpGet("{id:guid}/messages")]
+    [Authorize]
     public async Task<ActionResult<List<ChatMessage>>> GetChatMessages(Guid id)
     {
         var chatItem = await _context.Chats.FindAsync(id);
@@ -60,6 +67,7 @@ public class ChatController : ControllerBase
     // PUT: api/Chat/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<IActionResult> PutChat(Guid id, Chat chatItem)
     {
         if (id != chatItem.Id)
@@ -267,6 +275,7 @@ public class ChatController : ControllerBase
 
     // DELETE: api/Chat/5
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> DeleteChat(Guid id)
     {
         var chatItem = await _context.Chats.FindAsync(id);
