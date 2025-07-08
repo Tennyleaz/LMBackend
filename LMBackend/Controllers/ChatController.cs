@@ -118,10 +118,11 @@ public class ChatController : ControllerBase
     [HttpPost("{id:guid}/messages/stream-json")]
     public async Task StreamMessageAsJson(Guid id, [FromBody] ChatMessage request)
     {
+        // ndjson use newline to split JSON
         Response.ContentType = "application/x-ndjson";
 
         // Find parent chat id
-        ChatItem chat = await _context.ChatItems
+        Chat chat = await _context.Chats
             .Include(c => c.Messages)
             .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -129,7 +130,7 @@ public class ChatController : ControllerBase
         {
             if (Debugger.IsAttached)
             {
-                chat = new ChatItem
+                chat = new Chat
                 {
                     Id = id,
                     Title = "New Chat",
@@ -154,7 +155,7 @@ public class ChatController : ControllerBase
             Id = Guid.NewGuid(),
             Text = "This is a simulated bot response to: " + request.Text,
             Role = Role.System,
-            Timestamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            Timestamp = DateTimeOffset.UtcNow
         };
         chat.Messages.Add(botMessage);
 
