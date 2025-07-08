@@ -98,60 +98,43 @@ public class UsersController : ControllerBase
         return dto;
     }
 
-    //// PUT: api/Users/5
-    //// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    //[HttpPut("{id}")]
-    //public async Task<IActionResult> PutUser(Guid id, User user)
-    //{
-    //    if (id != user.Id)
-    //    {
-    //        return BadRequest();
-    //    }
-
-    //    _context.Entry(user).State = EntityState.Modified;
-
-    //    try
-    //    {
-    //        await _context.SaveChangesAsync();
-    //    }
-    //    catch (DbUpdateConcurrencyException)
-    //    {
-    //        if (!UserExists(id))
-    //        {
-    //            return NotFound();
-    //        }
-    //        else
-    //        {
-    //            throw;
-    //        }
-    //    }
-
-    //    return NoContent();
-    //}
-
-    // POST: api/Users
-    [HttpPost]
-    [Authorize]
-    public async Task<ActionResult<UserDto>> PostUser(User user)
-    {
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetUser", new { id = user.Id }, user);
-    }
-
     // DELETE: api/Users/5
+    /// <summary>
+    /// Delete user and all its chats.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpDelete("{id}")]
     [Authorize]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
+        // Check the JWT id and user id. An user could only delete itself
+        Claim userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
+        if (userIdClaim == null)
+        {
+            return Unauthorized();
+        }
+        Guid userId = Guid.Parse(userIdClaim.Value);
+        if (userId != id)
+        {
+            return Unauthorized();
+        }
+
         var user = await _context.Users.FindAsync(id);
         if (user == null)
         {
             return NotFound();
         }
 
+        // Get all items from user and delete them
+        foreach (var chat in user.Chats)
+        {
+            _context.ChatMessages.RemoveRange(chat.Messages);
+        }
+        _context.Chats.RemoveRange(user.Chats);
+        // Remove user lastly
         _context.Users.Remove(user);
+        
         await _context.SaveChangesAsync();
 
         return NoContent();
