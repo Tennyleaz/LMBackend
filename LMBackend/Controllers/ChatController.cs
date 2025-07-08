@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LMBackend.Models;
+using System.Text.Json;
+using System.Diagnostics;
 
 namespace LMBackend.Controllers;
 
@@ -97,7 +99,7 @@ public class ChatController : ControllerBase
         return CreatedAtAction("GetChatItem", new { id = chatItem.Id }, chatItem);
     }
 
-    // POST: api/Chat/{id}/Message
+    // POST: api/Chat/{id}/Messages
     [HttpPost("{id:guid}/messages")]
     public async Task<ActionResult<ChatMessage>> PostChatMessage(Guid id, ChatMessage chatMessage)
     {
@@ -110,6 +112,86 @@ public class ChatController : ControllerBase
         _context.ChatMessages.Add(chatMessage);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetChat), new { id = chatMessage.Id }, chatMessage);
+    }
+
+    // POST: api/Chat/{id}/messages/stream-json
+    [HttpPost("{id:guid}/messages/stream-json")]
+    public async Task StreamMessageAsJson(Guid id, [FromBody] ChatMessage request)
+    {
+        Response.ContentType = "application/x-ndjson";
+
+        // Find parent chat id
+        ChatItem chat = await _context.ChatItems
+            .Include(c => c.Messages)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (chat == null)
+        {
+            if (Debugger.IsAttached)
+            {
+                chat = new ChatItem
+                {
+                    Id = id,
+                    Title = "New Chat",
+                    Messages = new List<ChatMessage>()
+                };
+            }
+            else
+            {
+                Response.StatusCode = StatusCodes.Status404NotFound;
+                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }) + "\n");
+                await Response.Body.FlushAsync();
+                return;
+            }
+        }
+
+        // Save user message
+        chat.Messages.Add(request);
+
+        // Call chatbot service (mock or OpenAI, etc.)
+        ChatMessage botMessage = new ChatMessage
+        {            
+            Id = Guid.NewGuid(),
+            Text = "This is a simulated bot response to: " + request.Text,
+            Role = Role.System,
+            Timestamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
+        chat.Messages.Add(botMessage);
+
+        // Simulate streaming a chatbot reply
+        string reply = botMessage.Text;
+        for (int i = 0; i < reply.Length; i++)
+        {
+            ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
+            {
+                ChatId = id,
+                MessageId = botMessage.Id,
+                Sequence = i,
+                Text = reply[i].ToString(),
+                Status = StreamStatus.InProgress,
+                Timestamp = botMessage.Timestamp
+            };
+
+            string json = JsonSerializer.Serialize(chunk);
+            await Response.WriteAsync(json + "\n");
+            await Response.Body.FlushAsync();
+            await Task.Delay(50); // simulate delay
+        }
+
+        // Signal the end of the stream
+        // We don't have text in the final message, but we still need to send a completion signal
+        ChatMessageStreamResponse done = new ChatMessageStreamResponse
+        {
+            ChatId = id,
+            MessageId = botMessage.Id,
+            Sequence = reply.Length,  // Tell client the total length of the message sent
+            Text = string.Empty,
+            Status = StreamStatus.Completed,
+            Timestamp = botMessage.Timestamp
+        };
+
+        await Response.WriteAsync(JsonSerializer.Serialize(done) + "\n");
+        await Response.Body.FlushAsync();
     }
 
     // DELETE: api/Chat/5
