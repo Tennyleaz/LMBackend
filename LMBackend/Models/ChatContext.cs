@@ -9,6 +9,7 @@ public class ChatContext : DbContext
 
     }
 
-    public DbSet<ChatItem> ChatItems { get; set; } = null;
+    public DbSet<User> Users { get; set; } = null;
+    public DbSet<Chat> Chats { get; set; } = null;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null;
 }

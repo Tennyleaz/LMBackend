@@ -22,16 +22,16 @@ public class ChatController : ControllerBase
 
     // GET: api/Chat
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ChatItem>>> GetChatItems()
+    public async Task<ActionResult<IEnumerable<Chat>>> GetChats()
     {
-        return await _context.ChatItems.ToListAsync();
+        return await _context.Chats.ToListAsync();
     }
 
     // GET: api/Chat/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<ChatItem>> GetChatItem(Guid id)
+    public async Task<ActionResult<Chat>> GetChat(Guid id)
     {
-        var chatItem = await _context.ChatItems.FindAsync(id);
+        var chatItem = await _context.Chats.FindAsync(id);
 
         if (chatItem == null)
         {
@@ -45,7 +45,7 @@ public class ChatController : ControllerBase
     [HttpGet("{id:guid}/messages")]
     public async Task<ActionResult<List<ChatMessage>>> GetChatMessages(Guid id)
     {
-        var chatItem = await _context.ChatItems.FindAsync(id);
+        var chatItem = await _context.Chats.FindAsync(id);
 
         if (chatItem == null)
         {
@@ -58,7 +58,7 @@ public class ChatController : ControllerBase
     // PUT: api/Chat/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutChatItem(Guid id, ChatItem chatItem)
+    public async Task<IActionResult> PutChat(Guid id, Chat chatItem)
     {
         if (id != chatItem.Id)
         {
@@ -73,7 +73,7 @@ public class ChatController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!ChatItemExists(id))
+            if (!ChatExists(id))
             {
                 return NotFound();
             }
@@ -89,9 +89,9 @@ public class ChatController : ControllerBase
     // POST: api/Chat
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<ChatItem>> PostChatItem(ChatItem chatItem)
+    public async Task<ActionResult<Chat>> PostChat(Chat chatItem)
     {
-        _context.ChatItems.Add(chatItem);
+        _context.Chats.Add(chatItem);
         await _context.SaveChangesAsync();
 
         return CreatedAtAction("GetChatItem", new { id = chatItem.Id }, chatItem);
@@ -101,7 +101,7 @@ public class ChatController : ControllerBase
     [HttpPost("{id:guid}/messages")]
     public async Task<ActionResult<ChatMessage>> PostChatMessage(Guid id, ChatMessage chatMessage)
     {
-        ChatItem parent = await _context.ChatItems.FindAsync(id);
+        Chat parent = await _context.Chats.FindAsync(id);
         if (parent == null)
         {
             return NotFound(parent.Id);
@@ -109,27 +109,27 @@ public class ChatController : ControllerBase
 
         _context.ChatMessages.Add(chatMessage);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetChatItem), new { id = chatMessage.Id }, chatMessage);
+        return CreatedAtAction(nameof(GetChat), new { id = chatMessage.Id }, chatMessage);
     }
 
     // DELETE: api/Chat/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteChatItem(Guid id)
+    public async Task<IActionResult> DeleteChat(Guid id)
     {
-        var chatItem = await _context.ChatItems.FindAsync(id);
+        var chatItem = await _context.Chats.FindAsync(id);
         if (chatItem == null)
         {
             return NotFound();
         }
 
-        _context.ChatItems.Remove(chatItem);
+        _context.Chats.Remove(chatItem);
         await _context.SaveChangesAsync();
 
         return NoContent();
     }
 
-    private bool ChatItemExists(Guid id)
+    private bool ChatExists(Guid id)
     {
-        return _context.ChatItems.Any(e => e.Id == id);
+        return _context.Chats.Any(e => e.Id == id);
     }
 }
