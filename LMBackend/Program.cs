@@ -70,6 +70,19 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Allow cross-origin
+const string policyName = "myAllowSpecificOrigins";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: policyName,
+                      policy =>
+                      {
+                          policy.AllowAnyOrigin()
+                          .AllowAnyHeader()                                                  
+                          .AllowAnyMethod();
+                      });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -80,6 +93,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// CORS must before authentication and authorization
+app.UseCors(policyName);
 
 app.UseAuthentication();
 
