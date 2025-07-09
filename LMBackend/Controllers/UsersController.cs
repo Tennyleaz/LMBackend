@@ -98,6 +98,24 @@ public class UsersController : ControllerBase
         return dto;
     }
 
+    /// <summary>
+    /// Get my user info.
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<ActionResult<User>> GetMe()
+    {
+        Claim userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
+        if (userIdClaim == null)
+        {
+            return Unauthorized();
+        }
+        Guid userId = Guid.Parse(userIdClaim.Value);
+        User user = await _context.Users.FindAsync(userId);
+        return Ok(user);
+    }
+
     // DELETE: api/Users/5
     /// <summary>
     /// Delete user and all its chats.
