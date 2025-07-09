@@ -4,7 +4,7 @@ public class Chat
 {
     public Guid Id { get; set; }
     public string Title { get; set; }
-    public DateTimeOffset CreatedTime { get; set; }
+    public DateTime CreatedTime { get; set; }
     public List<ChatMessage> Messages { get; set; } = new();
 
     // foreign key of User id

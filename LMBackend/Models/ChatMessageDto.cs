@@ -2,7 +2,7 @@
 
 public class ChatMessageDto
 {
-    public Guid Id { get; set; }
+    //public Guid Id { get; set; }
     public string Text { get; set; }
-    public DateTimeOffset Timestamp { get; set; }
+    public DateTime Timestamp { get; set; }
 }

@@ -48,7 +48,7 @@ public class ChatController : ControllerBase
     [Authorize]
     public async Task<ActionResult<Chat>> GetChat(Guid id)
     {
-        var chatItem = await _context.Chats.FindAsync(id);
+        var chatItem = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
 
         if (chatItem == null)
         {
@@ -68,7 +68,7 @@ public class ChatController : ControllerBase
     [Authorize]
     public async Task<ActionResult<List<ChatMessage>>> GetChatMessages(Guid id)
     {
-        var chatItem = await _context.Chats.FindAsync(id);
+        var chatItem = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
 
         if (chatItem == null)
         {
@@ -268,9 +268,10 @@ public class ChatController : ControllerBase
         ChatMessage botMessage = new ChatMessage
         {            
             Id = Guid.NewGuid(),
+            ChatId = id,
             Text = "This is a simulated bot response to: " + request.Text,
             Role = Role.System,
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = DateTime.UtcNow
         };
         chat.Messages.Add(botMessage);
 

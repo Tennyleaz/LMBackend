@@ -5,7 +5,7 @@ public class ChatMessage
     public Guid Id { get; set; }
     public Role Role { get; set; }
     public string Text { get; set; }
-    public DateTimeOffset Timestamp { get; set; }
+    public DateTime Timestamp { get; set; }
 
     // foreign key of Chat id
     public Guid ChatId { get; set; }
@@ -16,7 +16,7 @@ public class ChatMessage
     {
         return new ChatMessage
         {
-            Id = dto.Id,
+            Id = Guid.NewGuid(),
             Role = Role.User,
             Text = dto.Text,
             Timestamp = dto.Timestamp
