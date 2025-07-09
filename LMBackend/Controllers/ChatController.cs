@@ -199,7 +199,6 @@ public class ChatController : ControllerBase
 
         // Add user's and LLM result into messages
         ChatMessage chatMessage = ChatMessage.FromDto(chatMessageDto);
-        //chatMessage.Chat = parent;
         chatMessage.ChatId = id;
         _context.ChatMessages.Add(chatMessage);
 
@@ -208,15 +207,15 @@ public class ChatController : ControllerBase
             Id = Guid.NewGuid(),
             Text = answer,
             Role = Role.System,
-            Timestamp = DateTimeOffset.UtcNow,
-            Chat = parent,
+            Timestamp = DateTime.UtcNow,
             ChatId = id,
         };
         _context.ChatMessages.Add(botMessage);
 
-        // Returns the LLM message
+        // Returns the LLM message pair
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetChat), new { id = botMessage.Id }, botMessage);
+        ChatMessageResponse response = new ChatMessageResponse(chatMessage, botMessage);
+        return Ok(response);
     }
 
     // POST: api/Chat/{id}/messages/stream-json

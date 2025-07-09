@@ -6,12 +6,16 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
-builder.Services.AddControllers();
+// Fix navigation property cycle in JSON
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 //builder.Services.AddDbContext<ChatContext>(opt => opt.UseInMemoryDatabase("Chat"));
 builder.Services.AddDbContext<ChatContext>(opt => opt.UseSqlite("Data Source=chat.db"));
 
