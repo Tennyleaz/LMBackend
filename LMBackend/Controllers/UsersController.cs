@@ -99,7 +99,7 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Get my user info.
+    /// Get my user info and chats.
     /// </summary>
     /// <returns></returns>
     [HttpGet("me")]
@@ -111,7 +111,7 @@ public class UsersController : ControllerBase
         {
             return Unauthorized();
         }
-        User user = await _context.Users.FindAsync(userId);
+        User user = await _context.Users.Include(u => u.Chats.OrderByDescending(x => x.CreatedTime)).FirstOrDefaultAsync(u => u.Id == userId);
         return Ok(user);
     }
 
