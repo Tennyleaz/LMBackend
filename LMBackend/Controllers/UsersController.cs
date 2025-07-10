@@ -64,11 +64,11 @@ public class UsersController : ControllerBase
     {
         Claim[] claims =
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Name)
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),  // subject claim
+            new Claim(JwtRegisteredClaimNames.UniqueName, user.Name)  // unique name claim
         };
 
-        string jwt = _config["Jwt:Key"];
+        string jwt = _config["Jwt:Key"];  // secret key from app settings
         SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt));
         SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -106,12 +106,11 @@ public class UsersController : ControllerBase
     [Authorize]
     public async Task<ActionResult<User>> GetMe()
     {
-        Claim userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
-        if (userIdClaim == null)
+        Guid userId = User.GetUserId();
+        if (userId == Guid.Empty)
         {
             return Unauthorized();
         }
-        Guid userId = Guid.Parse(userIdClaim.Value);
         User user = await _context.Users.FindAsync(userId);
         return Ok(user);
     }
@@ -127,13 +126,8 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         // Check the JWT id and user id. An user could only delete itself
-        Claim userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
-        if (userIdClaim == null)
-        {
-            return Unauthorized();
-        }
-        Guid userId = Guid.Parse(userIdClaim.Value);
-        if (userId != id)
+        Guid userId = User.GetUserId();
+        if (userId == Guid.Empty)
         {
             return Unauthorized();
         }

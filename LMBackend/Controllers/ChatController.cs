@@ -35,15 +35,11 @@ public class ChatController : ControllerBase
     [Authorize]
     public async Task<ActionResult<IEnumerable<Chat>>> GetChats()
     {
-        // Get userId from JWT claims
-        Claim userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                     ?? User.FindFirst("sub"); // Try standard and JWT 'sub'
-        if (userIdClaim == null)
+        Guid userId = User.GetUserId();
+        if (userId == Guid.Empty)
         {
             return Unauthorized();
         }
-
-        Guid userId = Guid.Parse(userIdClaim.Value);
         return await _context.Chats.Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedTime).ToListAsync();
     }
 
@@ -259,22 +255,10 @@ public class ChatController : ControllerBase
 
         if (chat == null)
         {
-            if (Debugger.IsAttached)
-            {
-                chat = new Chat
-                {
-                    Id = id,
-                    Title = "New Chat",
-                    Messages = new List<ChatMessage>()
-                };
-            }
-            else
-            {
-                Response.StatusCode = StatusCodes.Status404NotFound;
-                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }) + "\n");
-                await Response.Body.FlushAsync();
-                return;
-            }
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }) + "\n");
+            await Response.Body.FlushAsync();
+            return;
         }
 
         // Save user message

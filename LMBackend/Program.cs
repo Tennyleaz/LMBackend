@@ -64,10 +64,10 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
+        ValidateIssuer = true,  // must match ValidIssuer
+        ValidateAudience = true,  // must match ValidAudience
+        ValidateLifetime = true,  // must check expired time
+        ValidateIssuerSigningKey = true,  // must match IssuerSigningKey
         ValidIssuer = "lmbackend",
         ValidAudience = "lmbackend",
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("a very long text over 128 bits to prevent IDX10603"))
