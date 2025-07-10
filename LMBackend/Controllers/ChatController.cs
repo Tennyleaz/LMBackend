@@ -140,9 +140,8 @@ public class ChatController : ControllerBase
     public async Task<ActionResult<Chat>> PostChat(ChatDto chatDto)
     {
         // Get userId from JWT claims
-        Claim userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                     ?? User.FindFirst("sub"); // Try standard and JWT 'sub'
-        if (userIdClaim == null)
+        Guid userId = User.GetUserId();
+        if (userId == Guid.Empty)
         {
             return Unauthorized();
         }
@@ -153,7 +152,6 @@ public class ChatController : ControllerBase
             return Conflict("Id: " + chatDto.Id);
         }
 
-        Guid userId = Guid.Parse(userIdClaim.Value);
         Chat chat = Chat.FromDto(chatDto);
         chat.UserId = userId;
         //chat.User = user;
