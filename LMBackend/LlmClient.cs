@@ -26,6 +26,26 @@ internal class LlmClient
         SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant.");
         ChatMessage[] messages = { userMessage, systemMessage };
         ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
-        return result.Value.Content[0].Text;
+        return RemoveThink(result.Value.Content[0].Text);
+    }
+
+    public async Task<string> GetChatTitle(string question)
+    {
+        UserChatMessage userMessage = new UserChatMessage(question);
+        SystemChatMessage systemMessage = new SystemChatMessage("Generate a proper 1-line title for user's question, in plain text.");
+        ChatMessage[] messages = { userMessage, systemMessage };
+        ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
+        return RemoveThink(result.Value.Content[0].Text);
+    }
+
+    private static string RemoveThink(string text)
+    {
+        //int start = text.IndexOf("<think>");
+        int end = text.IndexOf("</think>") + 8;
+        if (end > 0)
+        {
+            return text.Substring(end, text.Length - end);
+        }
+        return text;
     }
 }

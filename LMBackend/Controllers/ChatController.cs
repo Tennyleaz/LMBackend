@@ -28,19 +28,28 @@ public class ChatController : ControllerBase
 
     // GET: api/Chat
     /// <summary>
-    /// Get all chats for this user.
+    /// Get all chats for this user. Messages are not loaded!
     /// </summary>
     /// <returns></returns>
     [HttpGet]
     [Authorize]
     public async Task<ActionResult<IEnumerable<Chat>>> GetChats()
     {
-        return await _context.Chats.ToListAsync();
+        // Get userId from JWT claims
+        Claim userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
+                     ?? User.FindFirst("sub"); // Try standard and JWT 'sub'
+        if (userIdClaim == null)
+        {
+            return Unauthorized();
+        }
+
+        Guid userId = Guid.Parse(userIdClaim.Value);
+        return await _context.Chats.Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedTime).ToListAsync();
     }
 
     // GET: api/Chat/5
     /// <summary>
-    /// Get a chat by id.
+    /// Get a chat and its messages by id.
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
@@ -88,14 +97,21 @@ public class ChatController : ControllerBase
     /// <returns></returns>
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> PutChat(Guid id, Chat chatItem)
+    public async Task<IActionResult> PutChat(Guid id, ChatDto chatDto)
     {
-        if (id != chatItem.Id)
+        if (id != chatDto.Id)
         {
             return BadRequest();
         }
 
-        _context.Entry(chatItem).State = EntityState.Modified;
+        Chat chat = await _context.Chats.FindAsync(id);
+        if (chat == null)
+        {
+            return NotFound(id);
+        }
+
+        chat.Title = chatDto.Title;
+        _context.Entry(chat).State = EntityState.Modified;
 
         try
         {
@@ -161,28 +177,17 @@ public class ChatController : ControllerBase
     /// <returns></returns>
     [HttpPost("{id:guid}/messages")]
     [Authorize]
-    public async Task<ActionResult<ChatMessage>> PostChatMessage(Guid id, ChatMessageDto chatMessageDto)
+    public async Task<ActionResult<ChatMessageResponse>> PostChatMessage(Guid id, ChatMessageDto chatMessageDto)
     {
-        Chat parent = await _context.Chats.FindAsync(id);
+        Chat parent = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
         if (parent == null)
         {
-            if (Debugger.IsAttached)
-            {
-                parent = new Chat
-                {
-                    Id = id,
-                    Title = "New Chat",
-                    Messages = new List<ChatMessage>()
-                };
-            }
-            else
-            {
-                return NotFound(parent.Id);
-            }
+            return NotFound(parent.Id);
         }
 
         // Ask LLM for answer
         string answer;
+        // TODO: Append previous messages too
         try
         {
             answer = await _llmClient.GetChatResult(chatMessageDto.Text);
@@ -195,6 +200,21 @@ public class ChatController : ControllerBase
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
+        }
+
+        // Generate a title for user's question, if this is the first message
+        ChatDto modifiedChat = null;
+        if (parent.Messages.Count == 0)
+        {
+            string title = await _llmClient.GetChatTitle(chatMessageDto.Text);
+            //string title = "Modified title";
+            modifiedChat = new ChatDto
+            {
+                Id = id,
+                CreatedTime = parent.CreatedTime,
+                Title = title,
+            };
+            parent.Title = title;
         }
 
         // Add user's and LLM result into messages
@@ -214,7 +234,7 @@ public class ChatController : ControllerBase
 
         // Returns the LLM message pair
         await _context.SaveChangesAsync();
-        ChatMessageResponse response = new ChatMessageResponse(chatMessage, botMessage);
+        ChatMessageResponse response = new ChatMessageResponse(chatMessage, botMessage, modifiedChat);
         return Ok(response);
     }
 

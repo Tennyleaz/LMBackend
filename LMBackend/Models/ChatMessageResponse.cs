@@ -1,8 +1,11 @@
 ﻿namespace LMBackend.Models;
 
+/// <summary>
+/// Contains the last 2 chat message, and the modified parent chat object (if any).
+/// </summary>
 public class ChatMessageResponse
 {
-    public ChatMessageResponse(ChatMessage request, ChatMessage response)
+    public ChatMessageResponse(ChatMessage request, ChatMessage response, ChatDto chatModified)
     {
         // create new object, also prevent circular reference
         Request = new ChatMessage
@@ -23,8 +26,11 @@ public class ChatMessageResponse
             Timestamp = response.Timestamp,
             Chat = null
         };
+        // this could be null if title does not change
+        ChatModified = chatModified;
     }
 
-    public ChatMessage Request {  get; set; }
+    public ChatMessage Request { get; set; }
     public ChatMessage Response { get; set; }
+    public ChatDto ChatModified { get; set; }
 }
