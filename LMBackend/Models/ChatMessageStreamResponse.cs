@@ -11,5 +11,6 @@ public class ChatMessageStreamResponse
     public DateTime Timestamp { get; set; }
     // Not empty only if Status is InProgress.
     public string Text { get; set; }
+    public string Model { get; set; }
     public ChatDto ChatModified { get; set; }
 }

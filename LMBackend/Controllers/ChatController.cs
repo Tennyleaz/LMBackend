@@ -224,6 +224,7 @@ public class ChatController : ControllerBase
             Role = Role.System,
             Timestamp = DateTime.UtcNow,
             ChatId = id,
+            Model = _llmClient.Model
         };
         _context.ChatMessages.Add(botMessage);
 
@@ -257,7 +258,7 @@ public class ChatController : ControllerBase
 
         // Find parent chat id
         Chat parent = await _context.Chats
-            .Include(c => c.Messages)
+            .Include(c => c.Messages.OrderBy(m => m.Timestamp))
             .FirstOrDefaultAsync(c => c.Id == id, ct);
 
         if (parent == null)
@@ -289,19 +290,20 @@ public class ChatController : ControllerBase
 
         // Create empty bot message to hold streaming data
         ChatMessage botMessage = new ChatMessage
-        {            
+        {
             Id = Guid.NewGuid(),
             ChatId = id,
             Text = string.Empty,
             Role = Role.System,
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            Model = _llmClient.Model
         };
-        _context.ChatMessages.Add(botMessage);        
+        _context.ChatMessages.Add(botMessage);
 
         // Call streaming endpoint
         int index = 0;
         StringBuilder botReplyBuilder = new();
-        IAsyncEnumerable<string> streamingTexts = _llmClient.GetChatResultStreaming(request.Text);
+        IAsyncEnumerable<string> streamingTexts = _llmClient.GetChatResultStreaming(parent.Messages, request.Text);
         await foreach (string part in streamingTexts.WithCancellation(ct))
         {
             botReplyBuilder.Append(part);
@@ -312,6 +314,7 @@ public class ChatController : ControllerBase
                 ReplyMessageId = userMessage.Id,
                 Sequence = index,
                 Text = part,
+                Model = _llmClient.Model,
                 Status = StreamStatus.InProgress,
                 Timestamp = botMessage.Timestamp
             };
@@ -335,6 +338,7 @@ public class ChatController : ControllerBase
             ReplyMessageId = userMessage.Id,
             Sequence = index,  // Tell client the total length of the message sent
             Text = string.Empty,
+            Model = _llmClient.Model,
             Status = StreamStatus.Completed,
             Timestamp = botMessage.Timestamp,
             ChatModified = modifiedChat

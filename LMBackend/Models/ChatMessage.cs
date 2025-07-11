@@ -6,6 +6,8 @@ public class ChatMessage
     public Role Role { get; set; }
     public string Text { get; set; }
     public DateTime Timestamp { get; set; }
+    // only has value for Role=System
+    public string Model { get; set; }
 
     // foreign key of Chat id
     public Guid ChatId { get; set; }
