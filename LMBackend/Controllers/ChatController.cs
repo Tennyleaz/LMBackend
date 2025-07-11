@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -247,48 +248,66 @@ public class ChatController : ControllerBase
         Response.ContentType = "application/x-ndjson";
         // Make sure headers are sent immediately
         await Response.Body.FlushAsync();
+        // Let client could cancel this request
+        CancellationToken ct = HttpContext.RequestAborted;
 
         // Find parent chat id
-        Chat chat = await _context.Chats
+        Chat parent = await _context.Chats
             .Include(c => c.Messages)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
 
-        if (chat == null)
+        if (parent == null)
         {
             Response.StatusCode = StatusCodes.Status404NotFound;
-            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }) + "\n");
+            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }) + "\n", ct);
             await Response.Body.FlushAsync();
             return;
         }
 
-        // Save user message
-        ChatMessage chatMessage = ChatMessage.FromDto(request);
-        chatMessage.ChatId = id;
-        _context.ChatMessages.Add(chatMessage);
+        // Generate a title for user's question, if this is the first message
+        ChatDto modifiedChat = null;
+        if (parent.Messages.Count == 0)
+        {
+            string title = await _llmClient.GetChatTitle(request.Text);
+            modifiedChat = new ChatDto
+            {
+                Id = id,
+                CreatedTime = parent.CreatedTime,
+                Title = title,
+            };
+            parent.Title = title;
+        }
 
-        // Call chatbot service (mock or OpenAI, etc.)
+        // Save user message
+        ChatMessage userMessage = ChatMessage.FromDto(request);
+        userMessage.ChatId = id;
+        _context.ChatMessages.Add(userMessage);
+
+        // Create empty bot message to hold streaming data
         ChatMessage botMessage = new ChatMessage
         {            
             Id = Guid.NewGuid(),
             ChatId = id,
-            Text = "This is a simulated bot response to: " + request.Text,
+            Text = string.Empty,
             Role = Role.System,
             Timestamp = DateTime.UtcNow
         };
-        _context.ChatMessages.Add(botMessage);
-        await _context.SaveChangesAsync();
+        _context.ChatMessages.Add(botMessage);        
 
-        // Simulate streaming a chatbot reply
-        string reply = botMessage.Text;
-        for (int i = 0; i < reply.Length; i++)
+        // Call streaming endpoint
+        int index = 0;
+        StringBuilder botReplyBuilder = new();
+        IAsyncEnumerable<string> streamingTexts = _llmClient.GetChatResultStreaming(request.Text);
+        await foreach (string part in streamingTexts.WithCancellation(ct))
         {
+            botReplyBuilder.Append(part);
             ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
             {
                 ChatId = id,
                 MessageId = botMessage.Id,
-                ReplyMessageId = chatMessage.Id,
-                Sequence = i,
-                Text = reply[i].ToString(),
+                ReplyMessageId = userMessage.Id,
+                Sequence = index,
+                Text = part,
                 Status = StreamStatus.InProgress,
                 Timestamp = botMessage.Timestamp
             };
@@ -296,8 +315,12 @@ public class ChatController : ControllerBase
             string json = JsonSerializer.Serialize(chunk);
             await Response.WriteAsync(json + "\n");
             await Response.Body.FlushAsync();
-            await Task.Delay(50); // simulate delay
+            index++;
         }
+
+        // Save the botMessage's full text and userMessage
+        botMessage.Text = botReplyBuilder.ToString();
+        await _context.SaveChangesAsync();
 
         // Signal the end of the stream
         // We don't have text in the final message, but we still need to send a completion signal
@@ -305,14 +328,15 @@ public class ChatController : ControllerBase
         {
             ChatId = id,
             MessageId = botMessage.Id,
-            ReplyMessageId = chatMessage.Id,
-            Sequence = reply.Length,  // Tell client the total length of the message sent
+            ReplyMessageId = userMessage.Id,
+            Sequence = index,  // Tell client the total length of the message sent
             Text = string.Empty,
             Status = StreamStatus.Completed,
-            Timestamp = botMessage.Timestamp
+            Timestamp = botMessage.Timestamp,
+            ChatModified = modifiedChat
         };
 
-        await Response.WriteAsync(JsonSerializer.Serialize(done) + "\n");
+        await Response.WriteAsync(JsonSerializer.Serialize(done) + "\n", ct);
         await Response.Body.FlushAsync();
     }
 

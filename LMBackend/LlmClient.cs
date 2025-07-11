@@ -29,10 +29,26 @@ internal class LlmClient
         return RemoveThink(result.Value.Content[0].Text);
     }
 
+    public async IAsyncEnumerable<string> GetChatResultStreaming(string question)
+    {
+        UserChatMessage userMessage = new UserChatMessage(question);
+        SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant.");
+        ChatMessage[] messages = { userMessage, systemMessage };
+        ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
+        AsyncCollectionResult<StreamingChatCompletionUpdate> updates = _client.CompleteChatStreamingAsync(messages);
+        await foreach(StreamingChatCompletionUpdate completionUpdate in updates)
+        {
+            foreach (ChatMessageContentPart contentPart in completionUpdate.ContentUpdate)
+            {
+                yield return contentPart.Text;
+            }
+        }
+    }
+
     public async Task<string> GetChatTitle(string question)
     {
         UserChatMessage userMessage = new UserChatMessage(question);
-        SystemChatMessage systemMessage = new SystemChatMessage("Generate a proper 1-line title for user's question, in plain text.");
+        SystemChatMessage systemMessage = new SystemChatMessage("Generate a short summary for user's question in few words, in plain text.");
         ChatMessage[] messages = { userMessage, systemMessage };
         ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
         return RemoveThink(result.Value.Content[0].Text);
