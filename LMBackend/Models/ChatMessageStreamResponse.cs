@@ -4,6 +4,7 @@ public class ChatMessageStreamResponse
 {
     public Guid ChatId { get; set; }
     public Guid MessageId { get; set; }
+    public Guid ReplyMessageId { get; set; }
     // Starts at 0
     public int Sequence { get; set; }
     public StreamStatus Status { get; set; }

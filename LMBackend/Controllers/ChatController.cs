@@ -245,6 +245,8 @@ public class ChatController : ControllerBase
     {
         // ndjson use newline to split JSON
         Response.ContentType = "application/x-ndjson";
+        // Make sure headers are sent immediately
+        await Response.Body.FlushAsync();
 
         // Find parent chat id
         Chat chat = await _context.Chats
@@ -261,9 +263,8 @@ public class ChatController : ControllerBase
 
         // Save user message
         ChatMessage chatMessage = ChatMessage.FromDto(request);
-        //chatMessage.Chat = chat;
         chatMessage.ChatId = id;
-        chat.Messages.Add(chatMessage);
+        _context.ChatMessages.Add(chatMessage);
 
         // Call chatbot service (mock or OpenAI, etc.)
         ChatMessage botMessage = new ChatMessage
@@ -274,7 +275,8 @@ public class ChatController : ControllerBase
             Role = Role.System,
             Timestamp = DateTime.UtcNow
         };
-        chat.Messages.Add(botMessage);
+        _context.ChatMessages.Add(botMessage);
+        await _context.SaveChangesAsync();
 
         // Simulate streaming a chatbot reply
         string reply = botMessage.Text;
@@ -284,6 +286,7 @@ public class ChatController : ControllerBase
             {
                 ChatId = id,
                 MessageId = botMessage.Id,
+                ReplyMessageId = chatMessage.Id,
                 Sequence = i,
                 Text = reply[i].ToString(),
                 Status = StreamStatus.InProgress,
@@ -302,6 +305,7 @@ public class ChatController : ControllerBase
         {
             ChatId = id,
             MessageId = botMessage.Id,
+            ReplyMessageId = chatMessage.Id,
             Sequence = reply.Length,  // Tell client the total length of the message sent
             Text = string.Empty,
             Status = StreamStatus.Completed,
