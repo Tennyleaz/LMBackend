@@ -250,6 +250,10 @@ public class ChatController : ControllerBase
         await Response.Body.FlushAsync();
         // Let client could cancel this request
         CancellationToken ct = HttpContext.RequestAborted;
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
 
         // Find parent chat id
         Chat parent = await _context.Chats
@@ -259,7 +263,7 @@ public class ChatController : ControllerBase
         if (parent == null)
         {
             Response.StatusCode = StatusCodes.Status404NotFound;
-            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }) + "\n", ct);
+            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }, options) + "\n", ct);
             await Response.Body.FlushAsync();
             return;
         }
@@ -312,7 +316,7 @@ public class ChatController : ControllerBase
                 Timestamp = botMessage.Timestamp
             };
 
-            string json = JsonSerializer.Serialize(chunk);
+            string json = JsonSerializer.Serialize(chunk, options);
             await Response.WriteAsync(json + "\n");
             await Response.Body.FlushAsync();
             index++;
@@ -336,7 +340,7 @@ public class ChatController : ControllerBase
             ChatModified = modifiedChat
         };
 
-        await Response.WriteAsync(JsonSerializer.Serialize(done) + "\n", ct);
+        await Response.WriteAsync(JsonSerializer.Serialize(done, options) + "\n", ct);
         await Response.Body.FlushAsync();
     }
 
