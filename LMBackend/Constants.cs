@@ -11,5 +11,6 @@
         public const string DEFAULT_MODEL = "meta-llama/Llama-3.2-3B-Instruct";
         public const int MAX_TOKEN = 4096;
         public const string HUGGINGFACE_TOKEN = "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";
+        public const string PGSQL_IP = "192.168.41.133";
     }
 }
