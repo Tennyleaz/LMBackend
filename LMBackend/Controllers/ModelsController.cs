@@ -13,18 +13,10 @@ namespace LMBackend.Controllers;
 public class ModelsController : Controller
 {
     private readonly ChatContext _context;
-    private readonly DockerClient _dockerClient;
-    private static readonly LlmModel[] _models = new LlmModel[]
-    {
-        new LlmModel("meta-llama/Llama-3.2-3B-Instruct", ""),
-        new LlmModel("Qwen/Qwen3-4B", ""),
-        new LlmModel("google/gemma-3n-E4B-it", ""),
-    };
 
     public ModelsController(ChatContext context)
     {
         _context = context;
-        _dockerClient = new DockerClientConfiguration(new Uri(Constants.DOCKER_ENDPOINT)).CreateClient();
     }
 
     /// <summary>
@@ -35,7 +27,7 @@ public class ModelsController : Controller
     //[Authorize]
     public ActionResult<LlmModel[]> ListModels()
     {
-        return Ok(_models);
+        return Ok(DockerHelper.ALL);
     }
 
     /// <summary>
@@ -46,67 +38,53 @@ public class ModelsController : Controller
     //[Authorize]
     public async Task<ActionResult<LlmDocker>> GetCurrent()
     {
-        CancellationToken ct = HttpContext.RequestAborted;
-        IList<ContainerListResponse> containers = await _dockerClient.Containers.ListContainersAsync(
-            new ContainersListParameters() {
-                Filters = new Dictionary<string, IDictionary<string, bool>>
-                {
-                    {
-                        "name", 
-                        new Dictionary<string, bool>
-                        {
-                            { Constants.DOCKER_NAME, true}
-                        }
-                    }
-                }
-            },
-            ct);
-        if (containers.Count == 0)
+        LlmDocker dockerModel = await DockerHelper.GetCurrentModel();
+        if (dockerModel != null)
         {
-            return NotFound(Constants.DOCKER_NAME);
+            return Ok(dockerModel);
         }
-
-        ContainerListResponse clr = containers.First();
-        // Find model in the command, like:
-        // python3 -m vllm.entrypoints.openai.api_server --model meta-llama/Llama-3.2-3B-Instruct --api-key tenny --max-model-len 8192
-        const string token = "--model ";
-        int start = clr.Command.IndexOf(token) + token.Length;
-        int end = clr.Command.IndexOf(" ", start + 1);
-        string model = clr.Command.Substring(start, end - start);
-        // Check if the model is recognized
-        foreach (var m in _models)
-        {
-            if (m.Name == model)
-            {
-                LlmDocker response = new LlmDocker
-                {
-                    Status = clr.Status,  // "Up 3 hours"
-                    State = clr.State,  // "running"
-                    Model = model  // "meta-llama/Llama-3.2-3B-Instruct"
-                };
-                return Ok(response);
-            }
-        }
-
-        return NotFound(model);
+        return NotFound(Constants.DOCKER_NAME);
     }
 
     /// <summary>
-    /// Set current vLLM docker status.
+    /// Set current vLLM docker.
     /// </summary>
     /// <returns></returns>
     [HttpPost("docker")]
-    [Authorize]
+    //[Authorize]
     public async Task<ActionResult<LlmDocker>> SetCurrent(LlmDockerDto request)
     {
-        // Stop the docker
+        LlmDocker dockerModel = await DockerHelper.ChangeCurrentModel(request.Model);
+        if (dockerModel != null)
+        {
+            return Ok(dockerModel);
+        }
+        return StatusCode(500, "vLLM container failed to start!");
+    }
 
-        // Create command based on model
+    /// <summary>
+    /// Check the vLLM docker status is ready or not.
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("healthCheck")]
+    public async Task<IActionResult> HealthCheck()
+    {
+        // Check if it is running first       
+        ContainerListResponse container = await DockerHelper.GetCurrentContainer();
+        if (container.State != "created" && container.State != "running")
+        {
+            return StatusCode(500, "vLLM container state error: " + container.State);
+        }
 
-        // Start the docker
+        // Check if model name is not empty
+        string modelName = await DockerHelper.GetCurrentModelName();
 
-        // Tell client container has started
-        await Task.Delay(100);
-        return Ok();
+        // Check metrics endpoint status once
+        bool isReady = await DockerHelper.CheckMetrics(modelName);
+        if (isReady) 
+        {
+            return Ok();           
+        }
+        return StatusCode(504, "vLLM /metrics endpoint not ready in time.");
     }
 }

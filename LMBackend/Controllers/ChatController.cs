@@ -19,12 +19,17 @@ namespace LMBackend.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly ChatContext _context;
-    private readonly LlmClient _llmClient;
+    private LlmClient _llmClient;
 
     public ChatController(ChatContext context)
     {
         _context = context;
-        _llmClient = new LlmClient(Constants.LLM_KEY, Constants.MODEL);
+    }
+
+    private async Task TryCreateLlmClient()
+    {
+        string modelName = await DockerHelper.GetCurrentModelName();
+        _llmClient = new LlmClient(Constants.LLM_KEY, modelName);
     }
 
     // GET: api/Chat
@@ -183,6 +188,7 @@ public class ChatController : ControllerBase
         // Ask LLM for answer
         string answer;
         // TODO: Append previous messages too
+        await TryCreateLlmClient();
         try
         {
             answer = await _llmClient.GetChatResult(chatMessageDto.Text);
@@ -270,6 +276,7 @@ public class ChatController : ControllerBase
         }
 
         // Generate a title for user's question, if this is the first message
+        await TryCreateLlmClient();
         ChatDto modifiedChat = null;
         if (parent.Messages.Count == 0)
         {
