@@ -123,22 +123,14 @@ internal static class DockerHelper
 
     private static CreateContainerParameters CreateDockerParams(string modelName)
     {
-        //string command = "docker run --runtime nvidia --gpus '\"device=3\"' " +
-        //    "-v ~/.cache/huggingface:/root/.cache/huggingface " +
-        //    "--env \"HUGGING_FACE_HUB_TOKEN=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\" " +
-        //    "-p 9090:8000 " +
-        //    "--ipc=host " +
-        //    $"--name {Constants.DOCKER_NAME} " +
-        //    "vllm/vllm-openai:latest " +
-        //    $"--model {request.Model} " +
-        //    $"--api-key {Constants.LLM_KEY}";
+        string token = Environment.CurrentDirectory = Environment.GetEnvironmentVariable("HUGGINGFACE_TOKEN");
         var param = new CreateContainerParameters
         {
             Image = "vllm/vllm-openai:latest",
             Name = Constants.DOCKER_NAME,
             Env = new List<string>
             {
-                $"HUGGING_FACE_HUB_TOKEN={Constants.HUGGINGFACE_TOKEN}"
+                $"HUGGING_FACE_HUB_TOKEN={token}"
             },
             HostConfig = new HostConfig
             {
