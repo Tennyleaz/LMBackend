@@ -99,7 +99,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();  // we don't need HTTPS in docker
 
 // CORS must before authentication and authorization
 app.UseCors(policyName);
