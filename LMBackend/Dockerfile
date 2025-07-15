@@ -17,6 +17,8 @@ RUN dotnet publish -c Release -o out
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:6c4df091e4e531bb93bdbfe7e7f0998e7ced344f54426b7e874116a3dc3233ff
+# Only /app will be in build image
 WORKDIR /app
+EXPOSE 7071
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "LMBackend.dll"]
