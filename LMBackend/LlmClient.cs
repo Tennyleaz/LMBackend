@@ -1,4 +1,5 @@
-﻿using OpenAI;
+﻿using Newtonsoft.Json.Linq;
+using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
 
@@ -7,6 +8,17 @@ namespace LMBackend;
 internal class LlmClient
 {
     private readonly ChatClient _client;
+    private readonly HttpClient _httpClient;
+
+    public static LlmClient Instance { get; private set; }
+
+    public static async Task TryCreateLlmInstance()
+    {
+        if (Instance != null)
+            return;
+        string modelName = await DockerHelper.GetCurrentModelName();
+        Instance = new LlmClient(Constants.LLM_KEY, modelName);
+    }
 
     public string Model { get; private set; }
 
@@ -21,6 +33,8 @@ internal class LlmClient
             model: model,
             credential: new ApiKeyCredential(apiKey)
         );
+        _httpClient = new HttpClient();
+        _httpClient.BaseAddress = new Uri(Constants.LLM_ENDPOINT);
     }
 
     public async Task<string> GetChatResult(string question)
@@ -82,5 +96,31 @@ internal class LlmClient
             return text.Substring(end, text.Length - end);
         }
         return text;
+    }
+
+    public async Task<float[]> GetEmbedding(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var payload = new 
+        {
+            model = Model,
+            input = text,
+            dimensions = 0,
+        };
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("/v1/embeddings", payload);
+            var result = await response.Content.ReadFromJsonAsync<dynamic>();
+            return ((JArray)result.data[0].embedding).ToObject<float[]>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error embed text: " + ex);
+            return null;
+        }
     }
 }

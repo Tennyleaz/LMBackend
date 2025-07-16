@@ -19,17 +19,10 @@ namespace LMBackend.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly ChatContext _context;
-    private LlmClient _llmClient;
 
     public ChatController(ChatContext context)
     {
         _context = context;
-    }
-
-    private async Task TryCreateLlmClient()
-    {
-        string modelName = await DockerHelper.GetCurrentModelName();
-        _llmClient = new LlmClient(Constants.LLM_KEY, modelName);
     }
 
     // GET: api/Chat
@@ -66,7 +59,7 @@ public class ChatController : ControllerBase
             return NotFound();
         }
 
-        return chatItem;
+        return Ok(chatItem);
     }
 
     // GET: api/Chat/{chatId}/Messages
@@ -188,10 +181,10 @@ public class ChatController : ControllerBase
         // Ask LLM for answer
         string answer;
         // TODO: Append previous messages too
-        await TryCreateLlmClient();
+        await LlmClient.TryCreateLlmInstance();
         try
         {
-            answer = await _llmClient.GetChatResult(chatMessageDto.Text);
+            answer = await LlmClient.Instance.GetChatResult(chatMessageDto.Text);
         }
         catch (AggregateException ex)
         {
@@ -207,7 +200,7 @@ public class ChatController : ControllerBase
         ChatDto modifiedChat = null;
         if (parent.Messages.Count == 0)
         {
-            string title = await _llmClient.GetChatTitle(chatMessageDto.Text);
+            string title = await LlmClient.Instance.GetChatTitle(chatMessageDto.Text);
             //string title = "Modified title";
             modifiedChat = new ChatDto
             {
@@ -230,7 +223,7 @@ public class ChatController : ControllerBase
             Role = Role.System,
             Timestamp = DateTime.UtcNow,
             ChatId = id,
-            Model = _llmClient.Model
+            Model = LlmClient.Instance.Model
         };
         _context.ChatMessages.Add(botMessage);
 
@@ -276,11 +269,11 @@ public class ChatController : ControllerBase
         }
 
         // Generate a title for user's question, if this is the first message
-        await TryCreateLlmClient();
+        await LlmClient.TryCreateLlmInstance();
         ChatDto modifiedChat = null;
         if (parent.Messages.Count == 0)
         {
-            string title = await _llmClient.GetChatTitle(request.Text);
+            string title = await LlmClient.Instance.GetChatTitle(request.Text);
             modifiedChat = new ChatDto
             {
                 Id = id,
@@ -303,14 +296,14 @@ public class ChatController : ControllerBase
             Text = string.Empty,
             Role = Role.System,
             Timestamp = DateTime.UtcNow,
-            Model = _llmClient.Model
+            Model = LlmClient.Instance.Model
         };
         _context.ChatMessages.Add(botMessage);
 
         // Call streaming endpoint
         int index = 0;
         StringBuilder botReplyBuilder = new();
-        IAsyncEnumerable<string> streamingTexts = _llmClient.GetChatResultStreaming(parent.Messages, request.Text);
+        IAsyncEnumerable<string> streamingTexts = LlmClient.Instance.GetChatResultStreaming(parent.Messages, request.Text);
         await foreach (string part in streamingTexts.WithCancellation(ct))
         {
             botReplyBuilder.Append(part);
@@ -321,7 +314,7 @@ public class ChatController : ControllerBase
                 ReplyMessageId = userMessage.Id,
                 Sequence = index,
                 Text = part,
-                Model = _llmClient.Model,
+                Model = LlmClient.Instance.Model,
                 Status = StreamStatus.InProgress,
                 Timestamp = botMessage.Timestamp
             };
@@ -345,7 +338,7 @@ public class ChatController : ControllerBase
             ReplyMessageId = userMessage.Id,
             Sequence = index,  // Tell client the total length of the message sent
             Text = string.Empty,
-            Model = _llmClient.Model,
+            Model = LlmClient.Instance.Model,
             Status = StreamStatus.Completed,
             Timestamp = botMessage.Timestamp,
             ChatModified = modifiedChat
