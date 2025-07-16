@@ -51,7 +51,7 @@ public class ChromaVectorStoreService
         }
     }
 
-    public async Task<string> TryCreateCollection(string userId)
+    public async Task<string> TryCreateCollection(Guid userId)
     {
         string collectionId = userId + "_collection";
         try
@@ -73,7 +73,7 @@ public class ChromaVectorStoreService
     /// Upserts records in a collection (create if not exists, otherwise update).
     /// </summary>
     /// <returns>Returns upsert success/fail.</returns>
-    public async Task<bool> UpsertAsync(string userId, List<ChromaChunk> chunks)
+    public async Task<bool> UpsertAsync(Guid userId, List<ChromaChunk> chunks)
     {
         string collectionId = userId + "_collection";
         UpsertCollectionRecordsPayload payload = new UpsertCollectionRecordsPayload
@@ -99,7 +99,7 @@ public class ChromaVectorStoreService
     /// Search records in a collection by embeddings.
     /// </summary>
     /// <returns>Returns the search document list. Null if fail.</returns>
-    public async Task<IList<string>> SearchAsync(string userId, string chatId, float[] embedding, int? topK, int? offset)
+    public async Task<IList<string>> SearchAsync(Guid userId, Guid chatId, float[] embedding, int? topK, int? offset)
     {
         string collectionId = userId + "_collection";
         try
@@ -110,7 +110,7 @@ public class ChromaVectorStoreService
                 N_results = topK,
                 Where = new Dictionary<string, object>
                 {
-                    { "chatId", chatId },
+                    { "chatId", chatId.ToString() },
                     //{ "userId", userId }
                 },
                 Include = new Include[] { Include.Distances, Include.Documents, Include.Metadatas }

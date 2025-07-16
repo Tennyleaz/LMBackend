@@ -7,7 +7,7 @@ public class ChromaChunk
     public float[] Embedding { get; set; }
     public Dictionary<string, object> Metadata { get; set; }  // Contains userId, chatId, documentId, chunkIndex, ...
 
-    public ChromaChunk(Guid userId, Guid chatId, Guid documentId, int documentIndex, string documentChunkText, float[] embedding)
+    public ChromaChunk(Guid userId, Guid chatId, Guid documentId, string documentName, int documentIndex, string documentChunkText, float[] embedding)
     {
         // name the id from user + chat + doc
         //Id = $"{userId}_{chatId}_{documentId}_{documentIndex}";
@@ -19,5 +19,6 @@ public class ChromaChunk
         Metadata.Add("chatId", chatId.ToString());
         Metadata.Add("documentId", documentId.ToString());
         Metadata.Add("chunkIndex", documentIndex);
+        Metadata.Add("documentName", documentName);
     }
 }
