@@ -6,4 +6,5 @@ public class User
     public string Name { get; set; }
     public string HashedPassword { get; set; }
     public virtual List<Chat> Chats { get; set; } = new();
+    public virtual List<Document> Documents { get; set; } = new();
 }
