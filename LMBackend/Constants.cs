@@ -7,6 +7,7 @@
         public const string METRICS_ENDPOINT = LLM_BASE_URL + ":9090/metrics";
         public const string DOCKER_ENDPOINT = LLM_BASE_URL + ":2375";
         public const string DOCKER_NAME = "vllm_tenny";
+        public const string CHROMA_ENDPOINT = LLM_BASE_URL + ":9092/api/v2";
         public const string LLM_KEY = "tenny";
         public const string DEFAULT_MODEL = "meta-llama/Llama-3.2-3B-Instruct";
         public const int MAX_TOKEN = 4096;
