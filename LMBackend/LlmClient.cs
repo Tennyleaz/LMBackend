@@ -2,6 +2,8 @@
 using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace LMBackend;
 
@@ -34,7 +36,8 @@ internal class LlmClient
             credential: new ApiKeyCredential(apiKey)
         );
         _httpClient = new HttpClient();
-        _httpClient.BaseAddress = new Uri(Constants.LLM_ENDPOINT);
+        _httpClient.BaseAddress = new Uri(Constants.EMBEDDING_ENDPOINT);
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.LLM_KEY);
     }
 
     public async Task<string> GetChatResult(string question)
@@ -107,15 +110,22 @@ internal class LlmClient
 
         var payload = new 
         {
-            model = Model,
+            model = "Qwen/Qwen3-Embedding-0.6B",
             input = text,
-            dimensions = 0,
+            user = "tenny"
         };
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("/v1/embeddings", payload);
-            var result = await response.Content.ReadFromJsonAsync<dynamic>();
-            return ((JArray)result.data[0].embedding).ToObject<float[]>();
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/v1/embeddings", payload);
+            // "{"object":"error","message":"The model does not support Embeddings API","type":"BadRequestError","param":null,"code":400}"
+            // "{"id":"embd-e46f57901d0b48a8951e1099df8375c7","object":"list","created":1752660182,"model":"Qwen/Qwen3-Embedding-0.6B","data":[{"index":0,"object":"embedding","embedding":[...]}]}
+            EmbeddingResult result = await response.Content.ReadFromJsonAsync<EmbeddingResult>();
+            if (result.code == 200 || result.code == 0)
+            {
+                return result.data[0].embedding;
+            }
+            Console.WriteLine("Error embed text: " + result.message);
+            return null;
         }
         catch (Exception ex)
         {
@@ -123,4 +133,20 @@ internal class LlmClient
             return null;
         }
     }
+}
+
+internal class EmbeddingResult
+{
+    public string id { get; set; }
+    public uint created { get; set; }
+    public string model { get; set; }
+    public int code { get; set; }
+    public string message { get; set; }
+    public EmbeddingData[] data { get; set; }
+}
+
+internal class EmbeddingData
+{
+    public int index { get; set; }
+    public float[] embedding { get; set; }
 }

@@ -20,7 +20,7 @@ public class Document
             Id = Guid.NewGuid(),
             Name = dto.Name,
             CreatedTime = dto.CreatedTime,
-            ChatId = dto.ChatId,
+            ChatId = dto.ChatId ?? Guid.Empty,
             UserId = userId
         };
     }

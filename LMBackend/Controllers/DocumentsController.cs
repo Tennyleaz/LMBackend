@@ -74,6 +74,7 @@ public class DocumentsController : Controller
         }
 
         // Save embedding to ChromaDB
+        await _chromaService.TryCreateCollection(userId);
         bool success = await _chromaService.UpsertAsync(userId, chromaChunks);
 
         // Save document to SQL
