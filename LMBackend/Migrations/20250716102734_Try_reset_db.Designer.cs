@@ -12,15 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LMBackend.Migrations
 {
     [DbContext(typeof(ChatContext))]
-    [Migration("20250715093908_Initial_create_postgre")]
-    partial class Initial_create_postgre
+    [Migration("20250716102734_Try_reset_db")]
+    partial class Try_reset_db
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.6")
+                .HasAnnotation("ProductVersion", "9.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -75,6 +75,31 @@ namespace LMBackend.Migrations
                     b.ToTable("ChatMessages");
                 });
 
+            modelBuilder.Entity("LMBackend.Models.Document", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChatId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Documents");
+                });
+
             modelBuilder.Entity("LMBackend.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -114,6 +139,17 @@ namespace LMBackend.Migrations
                     b.Navigation("Chat");
                 });
 
+            modelBuilder.Entity("LMBackend.Models.Document", b =>
+                {
+                    b.HasOne("LMBackend.Models.User", "User")
+                        .WithMany("Documents")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LMBackend.Models.Chat", b =>
                 {
                     b.Navigation("Messages");
@@ -122,6 +158,8 @@ namespace LMBackend.Migrations
             modelBuilder.Entity("LMBackend.Models.User", b =>
                 {
                     b.Navigation("Chats");
+
+                    b.Navigation("Documents");
                 });
 #pragma warning restore 612, 618
         }
