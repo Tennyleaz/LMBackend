@@ -95,7 +95,7 @@ internal class LlmClient
     public async Task<string> GetChatTitle(string question)
     {
         UserChatMessage userMessage = new UserChatMessage(question);
-        SystemChatMessage systemMessage = new SystemChatMessage("Generate a short, 1-line summary for user's question, in few words, in plain text.");
+        SystemChatMessage systemMessage = new SystemChatMessage("Summaize user's question, in few words, in plain text. It will be set to a conversation's title.");
         ChatMessage[] messages = { userMessage, systemMessage };
         ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
         return RemoveThink(result.Value.Content[0].Text);
