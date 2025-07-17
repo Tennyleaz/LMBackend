@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -24,7 +25,10 @@ public partial class ChromaClient
 
     private static JsonSerializerOptions CreateSerializerSettings()
     {
-        var settings = new JsonSerializerOptions();
+        var settings = new JsonSerializerOptions()
+        {
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        };
         UpdateJsonSerializerSettings(settings);
         return settings;
     }
@@ -754,7 +758,7 @@ public partial class ChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>List of databases</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<ICollection<Anonymous>> List_databasesAsync(string tenant, int? limit, int? offset)
+    public virtual Task<ICollection<Database>> List_databasesAsync(string tenant, int? limit, int? offset)
     {
         return List_databasesAsync(tenant, limit, offset, CancellationToken.None);
     }
@@ -768,7 +772,7 @@ public partial class ChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>List of databases</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<ICollection<Anonymous>> List_databasesAsync(string tenant, int? limit, int? offset, CancellationToken cancellationToken)
+    public virtual async Task<ICollection<Database>> List_databasesAsync(string tenant, int? limit, int? offset, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new System.ArgumentNullException("tenant");
@@ -824,7 +828,7 @@ public partial class ChromaClient
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
                     {
-                        var objectResponse_ = await ReadObjectResponseAsync<ICollection<Anonymous>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                        var objectResponse_ = await ReadObjectResponseAsync<ICollection<Database>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                         if (objectResponse_.Object == null)
                         {
                             throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -1252,7 +1256,7 @@ public partial class ChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>List of collections</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<ICollection<Anonymous>> List_collectionsAsync(string tenant, string database, int? limit, int? offset)
+    public virtual Task<ICollection<Collection>> List_collectionsAsync(string tenant, string database, int? limit, int? offset)
     {
         return List_collectionsAsync(tenant, database, limit, offset, CancellationToken.None);
     }
@@ -1267,7 +1271,7 @@ public partial class ChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>List of collections</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<ICollection<Anonymous>> List_collectionsAsync(string tenant, string database, int? limit, int? offset, CancellationToken cancellationToken)
+    public virtual async Task<ICollection<Collection>> List_collectionsAsync(string tenant, string database, int? limit, int? offset, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new System.ArgumentNullException("tenant");
@@ -1328,7 +1332,7 @@ public partial class ChromaClient
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
                     {
-                        var objectResponse_ = await ReadObjectResponseAsync<ICollection<Anonymous>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                        var objectResponse_ = await ReadObjectResponseAsync<ICollection<Collection>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                         if (objectResponse_.Object == null)
                         {
                             throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -3260,8 +3264,8 @@ public partial class ChromaClient
                 var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
                 if (field != null)
                 {
-                    var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute))
-                        as System.Runtime.Serialization.EnumMemberAttribute;
+                    var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(EnumMemberAttribute))
+                        as EnumMemberAttribute;
                     if (attribute != null)
                     {
                         return attribute.Value != null ? attribute.Value : name;
@@ -3837,38 +3841,38 @@ public partial class HnswConfiguration
 
 }
 
-
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum HnswSpace
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"l2")]
+    [EnumMember(Value = @"l2")]
     L2 = 0,
 
-    [System.Runtime.Serialization.EnumMember(Value = @"cosine")]
+    [EnumMember(Value = @"cosine")]
     Cosine = 1,
 
-    [System.Runtime.Serialization.EnumMember(Value = @"ip")]
+    [EnumMember(Value = @"ip")]
     Ip = 2,
 
 }
 
-
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum Include
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"distances")]
+    [EnumMember(Value="distances")]
     Distances = 0,
 
-    [System.Runtime.Serialization.EnumMember(Value = @"documents")]
+    [EnumMember(Value="documents")]
     Documents = 1,
 
-    [System.Runtime.Serialization.EnumMember(Value = @"embeddings")]
+    [EnumMember(Value="embeddings")]
     Embeddings = 2,
 
-    [System.Runtime.Serialization.EnumMember(Value = @"metadatas")]
+    [EnumMember(Value="metadatas")]
     Metadatas = 3,
 
-    [System.Runtime.Serialization.EnumMember(Value = @"uris")]
+    [EnumMember(Value="uris")]
     Uris = 4,
 
 }
@@ -3925,7 +3929,7 @@ public partial class QueryResponse
     public ICollection<Include> Include { get; set; } = new System.Collections.ObjectModel.Collection<Include>();
 
     [JsonPropertyName("metadatas")]
-    public ICollection<ICollection<Dictionary<string, bool>>> Metadatas { get; set; }
+    public ICollection<ICollection<Dictionary<string, object>>> Metadatas { get; set; }
 
     [JsonPropertyName("uris")]
     public ICollection<ICollection<string>> Uris { get; set; }
@@ -4189,63 +4193,63 @@ public partial class UpsertCollectionRecordsResponse
 }
 
 
-public partial class Vec : System.Collections.ObjectModel.Collection<Anonymous>
-{
+//public partial class Vec : System.Collections.ObjectModel.Collection<Anonymous>
+//{
 
-}
+//}
 
 
-public partial class Anonymous
-{
+//public partial class Anonymous
+//{
 
-    [JsonPropertyName("configuration_json")]
-    [System.ComponentModel.DataAnnotations.Required]
-    public CollectionConfiguration Configuration_json { get; set; } = new CollectionConfiguration();
+//    [JsonPropertyName("configuration_json")]
+//    [System.ComponentModel.DataAnnotations.Required]
+//    public CollectionConfiguration Configuration_json { get; set; } = new CollectionConfiguration();
 
-    [JsonPropertyName("database")]
-    [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-    public string Database { get; set; }
+//    [JsonPropertyName("database")]
+//    [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+//    public string Database { get; set; }
 
-    [JsonPropertyName("dimension")]
-    public int? Dimension { get; set; }
+//    [JsonPropertyName("dimension")]
+//    public int? Dimension { get; set; }
 
-    [JsonPropertyName("id")]
-    [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-    public System.Guid Id { get; set; }
+//    [JsonPropertyName("id")]
+//    [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+//    public System.Guid Id { get; set; }
 
-    [JsonPropertyName("log_position")]
-    public long Log_position { get; set; }
+//    [JsonPropertyName("log_position")]
+//    public long Log_position { get; set; }
 
-    [JsonPropertyName("metadata")]
-    public Dictionary<string, bool> Metadata { get; set; }
+//    [JsonPropertyName("metadata")]
+//    public Dictionary<string, bool> Metadata { get; set; }
 
-    [JsonPropertyName("name")]
-    [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-    public string Name { get; set; }
+//    [JsonPropertyName("name")]
+//    [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+//    public string Name { get; set; }
 
-    [JsonPropertyName("tenant")]
-    [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-    public string Tenant { get; set; }
+//    [JsonPropertyName("tenant")]
+//    [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+//    public string Tenant { get; set; }
 
-    [JsonPropertyName("version")]
-    public int Version { get; set; }
+//    [JsonPropertyName("version")]
+//    public int Version { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
+//    private IDictionary<string, object> _additionalProperties;
 
-    [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
+//    [JsonExtensionData]
+//    public IDictionary<string, object> AdditionalProperties
+//    {
+//        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
+//        set { _additionalProperties = value; }
+//    }
 
-}
+//}
 
 
 public enum EmbeddingFunctionConfigurationType
 {
 
-    [System.Runtime.Serialization.EnumMember(Value = @"legacy")]
+    [EnumMember(Value = @"legacy")]
     Legacy = 0,
 
 }
