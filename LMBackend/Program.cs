@@ -19,7 +19,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 //builder.Services.AddDbContext<ChatContext>(opt => opt.UseInMemoryDatabase("Chat"));
 //builder.Services.AddDbContext<ChatContext>(opt => opt.UseSqlite("Data Source=chat.db"));
-string connection = $"Host={Constants.PGSQL_IP};Port=9091;Database=lmdb;Username=lmbackend;Password=sql_pass";
+string connection = $"Host={Constants.PGSQL_IP};Port={Constants.PGSQL_PORT};Database=lmdb;Username=lmbackend;Password=sql_pass";
 builder.Services.AddDbContext<ChatContext>(opt => opt.UseNpgsql(connection));
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
