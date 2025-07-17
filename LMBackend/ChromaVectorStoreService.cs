@@ -1,4 +1,6 @@
-﻿namespace LMBackend;
+﻿using LMBackend.Models;
+
+namespace LMBackend;
 
 public class ChromaVectorStoreService
 {
@@ -53,14 +55,35 @@ public class ChromaVectorStoreService
 
     public async Task<string> TryCreateCollection(Guid userId)
     {
-        string collectionId = userId + "_collection";
+        string collectionName = userId + "_collection";
+        // Get first
         try
         {
-            AddCollectionRecordsResponse response = await _chromaClient.Collection_addAsync(TENANT, DATABASE, collectionId, new AddCollectionRecordsPayload
+            ICollection<Collection> collections = await _chromaClient.List_collectionsAsync(TENANT, DATABASE, null, null);
+            Collection collection = collections.FirstOrDefault(x => x.Name == collectionName);
+            if (collection != null)
             {
+                return collection.Id.ToString();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Get collection error: " + ex);
+        }
 
-            });
-            return collectionId;
+        try
+        {
+            CreateCollectionPayload body = new CreateCollectionPayload
+            {
+                Name = collectionName,
+            };
+            Collection response = await _chromaClient.Create_collectionAsync(TENANT, DATABASE, body);
+            return response.Id.ToString();
+        }
+        catch (ApiException ex)
+        {
+            Console.WriteLine("Create collection error: " + ex.StatusCode);
+            return null;
         }
         catch (Exception ex)
         {
@@ -73,9 +96,11 @@ public class ChromaVectorStoreService
     /// Upserts records in a collection (create if not exists, otherwise update).
     /// </summary>
     /// <returns>Returns upsert success/fail.</returns>
-    public async Task<bool> UpsertAsync(Guid userId, List<ChromaChunk> chunks)
+    public async Task<bool> UpsertAsync(string collectionId, List<ChromaChunk> chunks)
     {
-        string collectionId = userId + "_collection";
+        if (string.IsNullOrEmpty(collectionId))
+            return false;
+
         UpsertCollectionRecordsPayload payload = new UpsertCollectionRecordsPayload
         {
             Documents = chunks.Select(x => x.Document).ToList(),
@@ -99,28 +124,68 @@ public class ChromaVectorStoreService
     /// Search records in a collection by embeddings.
     /// </summary>
     /// <returns>Returns the search document list. Null if fail.</returns>
-    public async Task<IList<string>> SearchAsync(Guid userId, Guid chatId, float[] embedding, int? topK, int? offset)
+    public async Task<IList<ChromaRagChunkResult>> SearchAsync(string collectionId, Guid chatId, float[] embedding, int? topK, int? offset)
     {
-        string collectionId = userId + "_collection";
+        if (string.IsNullOrEmpty(collectionId))
+            return null;
+
+        // Prepare query
+        var payload = new QueryRequestPayload
+        {
+            Query_embeddings = { embedding },
+            N_results = topK,
+            Include = new Include[] { Include.Distances, Include.Documents, Include.Metadatas },
+            Ids = null  // Important! Empty array returns nothing!
+        };
+        if (chatId != Guid.Empty)
+        {
+            // Create filter by chat id
+            payload.Where = new Dictionary<string, object>
+            {
+                { "chatId", chatId.ToString() },
+            };
+        }
+        else
+        {
+            // No filter
+            payload.Where = null;
+        }
+
         try
         {
-            QueryResponse response = await _chromaClient.Collection_queryAsync(TENANT, DATABASE, collectionId, topK, offset, new QueryRequestPayload
-            {
-                Query_embeddings = { embedding },
-                N_results = topK,
-                Where = new Dictionary<string, object>
-                {
-                    { "chatId", chatId.ToString() },
-                    //{ "userId", userId }
-                },
-                Include = new Include[] { Include.Distances, Include.Documents, Include.Metadatas }
-            });
-            return response.Documents.FirstOrDefault()?.ToList();
+            QueryResponse response = await _chromaClient.Collection_queryAsync(TENANT, DATABASE, collectionId, topK, offset, payload);
+            List<ChromaRagChunkResult> chunkResult = ChromaRagChunkResult.FromQueryResponse(response);
+            return chunkResult;
         }
         catch (Exception ex)
         {
             Console.WriteLine("Search collection error: " + ex.Message);
             return null;
+        }
+    }
+
+    public async Task<bool> DeleteAsync(string collectionId, Guid documentId)
+    {
+        if (string.IsNullOrEmpty(collectionId))
+            return false;
+
+        try
+        {
+            // Find records from document id in metadata
+            DeleteCollectionRecordsResponse deleteResponse = await _chromaClient.Collection_deleteAsync(TENANT, DATABASE, collectionId, new DeleteCollectionRecordsPayload
+            {
+                Where = new Dictionary<string, object>
+                {
+                    { "documentId", documentId.ToString() }
+                },
+                Ids = null  // Important! Empty array returns nothing!
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Delete collection error: " + ex.Message);
+            return false;
         }
     }
 }

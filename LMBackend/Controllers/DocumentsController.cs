@@ -18,6 +18,9 @@ public class DocumentsController : Controller
         _chromaService = new ChromaVectorStoreService();
     }
 
+    /// <summary>
+    /// Get all documents by me.
+    /// </summary>
     [HttpGet]
     [Authorize]
     public async Task<ActionResult<IList<Document>>> GetDocuments()
@@ -30,6 +33,9 @@ public class DocumentsController : Controller
         return await _context.Documents.Where(x => x.UserId == userId).OrderBy(x => x.Name).ToListAsync();
     }
 
+    /// <summary>
+    /// Get a document by id.
+    /// </summary>
     [HttpGet("{id}")]
     [Authorize]
     public async Task<ActionResult<Document>> GetDocument(Guid id)
@@ -42,6 +48,9 @@ public class DocumentsController : Controller
         return Ok(item);
     }
 
+    /// <summary>
+    /// Create a document and generate embeddings.
+    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<Document>> PostDocument(DocumentDto documentDto)
@@ -51,6 +60,12 @@ public class DocumentsController : Controller
         if (userId == Guid.Empty)
         {
             return Unauthorized();
+        }
+        // Check if it's a valid user
+        User user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return NotFound("No user in database: " + userId);
         }
 
         // Get document data
@@ -73,14 +88,46 @@ public class DocumentsController : Controller
             chromaChunks.Add(new ChromaChunk(userId, newDoc.ChatId, newDoc.Id, newDoc.Name, i, documentChunks[i], embedding));
         }
 
+        // Create database and collection if not exist
+        //await _chromaService.TryCreateDatabaseForUser();
+        string collectionId = await _chromaService.TryCreateCollection(userId);
         // Save embedding to ChromaDB
-        await _chromaService.TryCreateCollection(userId);
-        bool success = await _chromaService.UpsertAsync(userId, chromaChunks);
+        bool success = await _chromaService.UpsertAsync(collectionId, chromaChunks);
+        if (!success)
+        {
+            return StatusCode(500, "Failed to upsert chromadb");
+        }
 
         // Save document to SQL
         _context.Documents.Add(newDoc);
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetDocument), new { id = newDoc.Id }, newDoc);
+    }
+
+    /// <summary>
+    /// Delete a document by id.
+    /// </summary>
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteDocument(Guid id)
+    {
+        Guid userId = User.GetUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+        Document doc = await _context.Documents.FindAsync(id);
+        if (doc == null)
+        {
+            return NotFound();
+        }
+
+        string collectionId = await _chromaService.TryCreateCollection(userId);
+        bool result = await _chromaService.DeleteAsync(collectionId, id);
+
+        _context.Documents.Remove(doc);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 }
