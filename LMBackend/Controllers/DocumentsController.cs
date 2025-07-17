@@ -10,12 +10,11 @@ namespace LMBackend.Controllers;
 public class DocumentsController : Controller
 {
     private readonly ChatContext _context;
-    private readonly ChromaVectorStoreService _chromaService;
 
     public DocumentsController(ChatContext context)
     {
         _context = context;
-        _chromaService = new ChromaVectorStoreService();
+        ChromaVectorStoreService.TryCreateChromaInstance();
     }
 
     /// <summary>
@@ -90,9 +89,9 @@ public class DocumentsController : Controller
 
         // Create database and collection if not exist
         //await _chromaService.TryCreateDatabaseForUser();
-        string collectionId = await _chromaService.TryCreateCollection(userId);
+        string collectionId = await ChromaVectorStoreService.Instance.TryCreateCollection(userId);
         // Save embedding to ChromaDB
-        bool success = await _chromaService.UpsertAsync(collectionId, chromaChunks);
+        bool success = await ChromaVectorStoreService.Instance.UpsertAsync(collectionId, chromaChunks);
         if (!success)
         {
             return StatusCode(500, "Failed to upsert chromadb");
@@ -123,8 +122,8 @@ public class DocumentsController : Controller
             return NotFound();
         }
 
-        string collectionId = await _chromaService.TryCreateCollection(userId);
-        bool result = await _chromaService.DeleteAsync(collectionId, id);
+        string collectionId = await ChromaVectorStoreService.Instance.TryCreateCollection(userId);
+        bool result = await ChromaVectorStoreService.Instance.DeleteAsync(collectionId, id);
 
         _context.Documents.Remove(doc);
         await _context.SaveChangesAsync();

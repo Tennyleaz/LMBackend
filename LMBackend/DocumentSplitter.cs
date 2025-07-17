@@ -15,6 +15,10 @@ public static class DocumentSplitter
             case ".pdf":
                 return GetLinesFromPdf(data);                
             case ".txt":
+            case ".htm":
+            case ".html":
+            case ".js":
+            case ".cs":
                 return GetLinesFromTxt(data);
             case ".docx":
                 return GetLinesFromDocx(data);
@@ -77,7 +81,13 @@ public static class DocumentSplitter
                 end++;
             }
 
-            chunks.Add(string.Join(" ", currentChunk));
+            string chunk = string.Join(" ", currentChunk);
+            chunk.Trim();
+            if (!string.IsNullOrWhiteSpace(chunk))
+            {
+                chunks.Add(chunk);
+            }
+
             // move start forward for overlap
             start = end - overlapWords < start + 1 ? start + 1 : end - overlapWords;
         }

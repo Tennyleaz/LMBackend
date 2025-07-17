@@ -52,7 +52,7 @@ public class ChatController : ControllerBase
     [Authorize]
     public async Task<ActionResult<Chat>> GetChat(Guid id)
     {
-        var chatItem = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
+        Chat chatItem = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
 
         if (chatItem == null)
         {
@@ -72,7 +72,7 @@ public class ChatController : ControllerBase
     [Authorize]
     public async Task<ActionResult<List<ChatMessage>>> GetChatMessages(Guid id)
     {
-        var chatItem = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
+        Chat chatItem = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
 
         if (chatItem == null)
         {
@@ -144,7 +144,12 @@ public class ChatController : ControllerBase
         {
             return Unauthorized();
         }
-
+        // Check if it's a valid user
+        User user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return NotFound("No user in database: " + userId);
+        }
         // Check if chat id exists
         if (_context.Chats.Any(x => x.Id == chatDto.Id))
         {
@@ -153,7 +158,6 @@ public class ChatController : ControllerBase
 
         Chat chat = Chat.FromDto(chatDto);
         chat.UserId = userId;
-        //chat.User = user;
 
         _context.Chats.Add(chat);
         await _context.SaveChangesAsync();
@@ -255,6 +259,16 @@ public class ChatController : ControllerBase
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         };
 
+        // Get userId from JWT claims
+        Guid userId = User.GetUserId();
+        if (userId == Guid.Empty)
+        {
+            Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "User id not found" }, options) + "\n", ct);
+            await Response.Body.FlushAsync();
+            return;
+        }
+
         // Find parent chat id
         Chat parent = await _context.Chats
             .Include(c => c.Messages.OrderBy(m => m.Timestamp))
@@ -283,6 +297,25 @@ public class ChatController : ControllerBase
             parent.Title = title;
         }
 
+        // Do RAG if user asked
+        string ragResult = null;
+        if (request.UseRetrieval)
+        {
+            // 1. Generate embedding for user query
+            float[] embedding = await LlmClient.Instance.GetEmbedding(request.Text);
+
+            // 2. Query ChromaDB with embedding (REST)
+            // Create instance if needed
+            ChromaVectorStoreService.TryCreateChromaInstance();
+            // Get collection id for this user
+            string collectionId = await ChromaVectorStoreService.Instance.TryCreateCollection(userId);
+            // Search for the text
+            IList<ChromaRagChunkResult> chunkResult = await ChromaVectorStoreService.Instance.SearchAsync(collectionId, parent.Id, embedding, 10, null);
+
+            // 3. Build prompt: concat retrieved chunks + user query
+            ragResult = string.Join("\n", chunkResult);
+        }
+
         // Save user message
         ChatMessage userMessage = ChatMessage.FromDto(request);
         userMessage.ChatId = id;
@@ -303,7 +336,7 @@ public class ChatController : ControllerBase
         // Call streaming endpoint
         int index = 0;
         StringBuilder botReplyBuilder = new();
-        IAsyncEnumerable<string> streamingTexts = LlmClient.Instance.GetChatResultStreaming(parent.Messages, request.Text);
+        IAsyncEnumerable<string> streamingTexts = LlmClient.Instance.GetChatResultStreaming(parent.Messages, request.Text, ragResult);
         await foreach (string part in streamingTexts.WithCancellation(ct))
         {
             botReplyBuilder.Append(part);

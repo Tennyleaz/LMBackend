@@ -27,4 +27,15 @@ public class ChromaRagChunkResult
         }
         return results;
     }
+
+    public override string ToString()
+    {
+        string result = "";
+        if (Distance.HasValue)
+            result += $"###Distance: {Distance}\n\n";
+        result += $"###Document Name: {Metadata["documentName"]}\n\n";        
+        result += $"###Document Chunk: {Document}\n\n";
+        result += $"###Document Chunk Index: {Metadata["chunkIndex"]} ";
+        return result;
+    }
 }

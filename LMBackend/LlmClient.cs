@@ -24,7 +24,7 @@ internal class LlmClient
 
     public string Model { get; private set; }
 
-    public LlmClient(string apiKey, string model)
+    private LlmClient(string apiKey, string model)
     {
         Model = model;
         _client = new ChatClient(
@@ -49,11 +49,22 @@ internal class LlmClient
         return RemoveThink(result.Value.Content[0].Text);
     }
 
-    public async IAsyncEnumerable<string> GetChatResultStreaming(List<Models.ChatMessage> oldMessages, string question)
+    public async IAsyncEnumerable<string> GetChatResultStreaming(List<Models.ChatMessage> oldMessages, string question, string ragResult)
     {
+        // Determine system prompt based on RAG
+        string systemPrompt;
+        if (string.IsNullOrEmpty(ragResult))
+        {
+            systemPrompt = "You are a helpful assistant.";
+        }
+        else
+        {
+            systemPrompt = "Use the context below to answer the question as best as you can. If the answer is not in the context or not relvent, notify the user.\n\nContext:\n\n";
+            systemPrompt += ragResult;
+        }
         List<ChatMessage> messages = new List<ChatMessage>
         {
-            new SystemChatMessage("You are a helpful assistant.") // add once, at start
+            new SystemChatMessage(systemPrompt) // add once, at start
         };
         // Add history from this chat
         List<Models.ChatMessage> limitedHistory = ChatHistoryLimiter.LimitHistory(oldMessages, Constants.MAX_TOKEN, question);
