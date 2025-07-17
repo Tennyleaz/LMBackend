@@ -303,6 +303,13 @@ public class ChatController : ControllerBase
         {
             // 1. Generate embedding for user query
             float[] embedding = await LlmClient.Instance.GetEmbedding(request.Text);
+            if (embedding == null)
+            {
+                Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to get embeddings." }, options) + "\n", ct);
+                await Response.Body.FlushAsync();
+                return;
+            }
 
             // 2. Query ChromaDB with embedding (REST)
             // Create instance if needed
@@ -310,7 +317,14 @@ public class ChatController : ControllerBase
             // Get collection id for this user
             string collectionId = await ChromaVectorStoreService.Instance.TryCreateCollection(userId);
             // Search for the text
-            IList<ChromaRagChunkResult> chunkResult = await ChromaVectorStoreService.Instance.SearchAsync(collectionId, parent.Id, embedding, 10, null);
+            IList<ChromaRagChunkResult> chunkResult = await ChromaVectorStoreService.Instance.SearchAsync(collectionId, parent.Id, embedding, 5, null);
+            if (chunkResult == null)
+            {
+                Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to search ChromaDB." }, options) + "\n", ct);
+                await Response.Body.FlushAsync();
+                return;
+            }
 
             // 3. Build prompt: concat retrieved chunks + user query
             ragResult = string.Join("\n", chunkResult);

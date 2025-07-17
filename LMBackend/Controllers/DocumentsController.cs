@@ -72,7 +72,7 @@ public class DocumentsController : Controller
         List<string> lines = DocumentSplitter.GetLines(newDoc.Name, documentDto.Data);
 
         // Split documents into chunks
-        List<string> documentChunks = DocumentSplitter.SplitText(lines);
+        List<string> documentChunks = DocumentSplitter.SplitTextByWords(lines);
 
         // Call embedding API for each chunk
         await LlmClient.TryCreateLlmInstance();

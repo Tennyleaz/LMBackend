@@ -146,15 +146,15 @@ public class ChromaVectorStoreService
             Include = new Include[] { Include.Distances, Include.Documents, Include.Metadatas },
             Ids = null  // Important! Empty array returns nothing!
         };
-        if (chatId != Guid.Empty)
-        {
-            // Create filter by chat id
-            payload.Where = new Dictionary<string, object>
-            {
-                { "chatId", chatId.ToString() },
-            };
-        }
-        else
+        //if (chatId != Guid.Empty)
+        //{
+        //    // Create filter by chat id
+        //    payload.Where = new Dictionary<string, object>
+        //    {
+        //        { "chatId", chatId.ToString() },
+        //    };
+        //}
+        //else
         {
             // No filter
             payload.Where = null;

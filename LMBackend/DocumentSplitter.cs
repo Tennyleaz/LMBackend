@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO;
+using System.Text;
 using UglyToad.PdfPig;
 using Xceed.Words.NET;
 
@@ -63,34 +64,135 @@ public static class DocumentSplitter
         }
     }
 
-    public static List<string> SplitText(List<string> units, int maxChunkWords = 250, int overlapWords = 50)
+    public static List<string> SplitText(List<string> lines, int maxChunkWords = 250, int overlapWords = 50)
     {
-        var chunks = new List<string>();
+        List<string> chunks = new List<string>();
+
+        // check for empty lines to split into paragraphs
         int start = 0;
-
-        while (start < units.Count)
+        int paragraphCount = 0;
+        for (int i = 0; i < lines.Count; i++)
         {
-            int wordCount = 0;
-            int end = start;
-            var currentChunk = new List<string>();
-
-            while (end < units.Count && wordCount + units[end].Split(' ').Length <= maxChunkWords)
+            if (string.IsNullOrWhiteSpace(lines[i]))
             {
-                currentChunk.Add(units[end]);
-                wordCount += units[end].Split(' ').Length;
-                end++;
+                if (i > start) // Avoid empty paragraphs from consecutive blank lines
+                {
+                    string paragraph = string.Join("\n", lines.Skip(start).Take(i - start));
+                    paragraph = paragraph.Trim();
+                    if (!string.IsNullOrWhiteSpace(paragraph))
+                    {
+                        // add filename and page info to data
+                        List<string> results = SplitParagraph(paragraph);
+                        for (int j = 0; j < results.Count; j++)
+                        {
+                            paragraphCount++;
+                            string newParagraph = results[j];
+                            chunks.Add(newParagraph);
+                        }
+                    }
+                }
+                start = i + 1;
             }
+        }
+        // Handle last paragraph (if the file doesn't end with an empty line)
+        if (start < lines.Count)
+        {
+            string lastParagraph = string.Join("\n", lines.Skip(start).Take(lines.Count - start));
+            lastParagraph = lastParagraph.Trim();
+            if (!string.IsNullOrWhiteSpace(lastParagraph))
+            {
+                List<string> results = SplitParagraph(lastParagraph);
+                for (int j = 0; j < results.Count; j++)
+                {
+                    paragraphCount++;
+                    string newParagraph = results[j];
+                    chunks.Add(newParagraph);
+                }
+            }
+        }
 
-            string chunk = string.Join(" ", currentChunk);
-            chunk.Trim();
+        return chunks;
+    }
+
+    /// <summary>
+    /// split the input by \n if longer than MAX_TOKEN
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    private static List<string> SplitParagraph(string input)
+    {
+        List<string> result = new List<string>();
+
+        // split the input by \n if longer than MAX_TOKEN
+        const int MAX_TOKEN = 500;
+        if (input.Length >= MAX_TOKEN)
+        {
+            string[] paragraphs = input.Split(new[] { "\n", "。", ". " }, StringSplitOptions.RemoveEmptyEntries);
+            string temp = string.Empty;
+            foreach (string paragraph in paragraphs)
+            {
+                if (paragraph.Length > MAX_TOKEN)
+                {
+                    // Split the paragraph into smaller chunks
+                    for (int i = 0; i < paragraph.Length; i += MAX_TOKEN)
+                    {
+                        string chunk = paragraph.Substring(i, Math.Min(MAX_TOKEN, paragraph.Length - i));
+                        result.Add(chunk);
+                    }
+                }
+                else
+                {
+                    // add each paragraph up to max length
+                    if (temp.Length + paragraph.Length > MAX_TOKEN)
+                    {
+                        result.Add(temp);
+                        temp = string.Empty;
+                    }
+                    else
+                    {
+                        temp += paragraph + ". ";
+                    }
+                }
+            }
+        }
+        else
+        {
+            result.Add(input);
+        }
+
+        return result;
+    }
+
+    public static List<string> SplitTextByWords(List<string> lines, int maxChunkWords = 250, int overlapWords = 50)
+    {
+        // Join all lines into a single document
+        var allText = string.Join(" ", lines);
+        var words = allText.Split(new[] { ' ', '\n', '\r', '\t', '。', '，', '、', '！', '？', '：', '；' }, StringSplitOptions.RemoveEmptyEntries);
+
+        var chunks = new List<string>();
+
+        int start = 0;
+        while (start < words.Length)
+        {
+            // Calculate end index, not exceeding bounds
+            int end = Math.Min(start + maxChunkWords, words.Length);
+
+            // Create chunk
+            var chunkWords = words.Skip(start).Take(end - start).ToArray();
+            var chunk = string.Join(" ", chunkWords).Trim();
             if (!string.IsNullOrWhiteSpace(chunk))
             {
                 chunks.Add(chunk);
             }
 
-            // move start forward for overlap
-            start = end - overlapWords < start + 1 ? start + 1 : end - overlapWords;
+            if (end == words.Length) // last chunk
+                break;
+
+            // For overlap, move start forward
+            start += (maxChunkWords - overlapWords);
+            if (start < 0) start = 0; // safety
         }
+
         return chunks;
     }
 }
