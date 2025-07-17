@@ -123,7 +123,7 @@ internal static class DockerHelper
 
     private static CreateContainerParameters CreateDockerParams(string modelName)
     {
-        string token = Environment.CurrentDirectory = Environment.GetEnvironmentVariable("HUGGINGFACE_TOKEN");
+        string token = Environment.GetEnvironmentVariable("HUGGINGFACE_TOKEN");
         var param = new CreateContainerParameters
         {
             Image = "vllm/vllm-openai:latest",
@@ -169,10 +169,10 @@ internal static class DockerHelper
             }
         };
         // Set custom parameters
-        if (modelName == "meta-llama/Llama-3.2-3B-Instruct")
+        if (modelName == "meta-llama/Llama-3.2-3B-Instruct" || modelName == "unsloth/Llama-3.2-3B-Instruct")
         {
             param.Cmd.Add("--max-model-len");
-            param.Cmd.Add("8192");
+            param.Cmd.Add("5000");
         }
         else if (modelName == "Qwen/Qwen3-4B")
         {
@@ -265,6 +265,7 @@ internal static class DockerHelper
     public static readonly LlmModel[] ALL = new LlmModel[]
     {
         new LlmModel("meta-llama/Llama-3.2-3B-Instruct", ""),
+        new LlmModel("unsloth/Llama-3.2-3B-Instruct", ""),
         new LlmModel("Qwen/Qwen3-4B", ""),
         new LlmModel("google/gemma-3-4b-it", ""),
     };
