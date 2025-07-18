@@ -165,7 +165,8 @@ internal static class DockerHelper
             Cmd = new List<string>
             {
                 "--model", modelName,
-                "--api-key", Constants.LLM_KEY
+                "--api-key", Constants.LLM_KEY, 
+                "--gpu_memory_utilization", "0.8"
             }
         };
         // Set custom parameters
@@ -268,5 +269,6 @@ internal static class DockerHelper
         new LlmModel("unsloth/Llama-3.2-3B-Instruct", ""),
         new LlmModel("Qwen/Qwen3-4B", ""),
         new LlmModel("google/gemma-3-4b-it", ""),
+        new LlmModel("google/gemma-3n-E2B-it", ""),
     };
 }
