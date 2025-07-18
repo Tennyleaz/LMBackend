@@ -4,6 +4,7 @@ using OpenAI.Chat;
 using System.ClientModel;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace LMBackend;
 
@@ -105,6 +106,53 @@ internal class LlmClient
         return RemoveThink(result.Value.Content[0].Text);
     }
 
+    public async Task<GoogleSearchKeyword> GetGoogleSearchKeyword(string question)
+    {        
+        SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant designed to generate google search keywords. " +
+            "Your sole task is to create google search keywords from user's input. " +
+            "**Do not attempt to answer the user's question or provide any further explanation. " +
+            "Fill the `keywords` property with keywords to search google, and `isNeedGoogleSearch` to true. " +
+            "If no google search is needed, set `isNeedGoogleSearch` to false and `keywords` to null.");
+        UserChatMessage userMessage = new UserChatMessage(question);
+        ChatMessage[] messages = { systemMessage, userMessage };
+        ChatCompletionOptions options = new ChatCompletionOptions
+        {
+            ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+                jsonSchemaFormatName: "google_search_keyword",
+                jsonSchema: BinaryData.FromBytes("""
+                    {
+                        "type": "object",
+                        "properties": {
+                            "keywords": { 
+                                "type": "string",
+                                "description": "The keywords to call google search API."
+                            },
+                            "isNeedGoogleSearch": { 
+                                "type": "boolean",
+                                "description": "Is the user question need to call google search API for data or not."
+                            }
+                        },
+                        "required": ["keywords", "isNeedGoogleSearch"],
+                        "additionalProperties": false
+                    }
+                    """u8.ToArray()),
+                jsonSchemaIsStrict: true)
+        };
+        ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages, options);
+        return JsonSerializer.Deserialize<GoogleSearchKeyword>(result.Value.Content[0].Text);
+    }
+
+    public async Task<string> SummarizeWebpage(string html)
+    {
+        SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant designed to summarize web pages. " +
+            "Your sole task is to summarize input web page html into text. " +
+            "If given input is not able to summarize, returns the input directly.");
+        UserChatMessage userMessage = new UserChatMessage(html);
+        ChatMessage[] messages = { systemMessage, userMessage };
+        ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
+        return result.Value.Content[0].Text;
+    }
+
     private static string RemoveThink(string text)
     {
         int start = text.IndexOf("<think>");
@@ -164,4 +212,10 @@ internal class EmbeddingData
 {
     public int index { get; set; }
     public float[] embedding { get; set; }
+}
+
+internal class GoogleSearchKeyword
+{
+    public string keywords { get; set; }
+    public bool isNeedGoogleSearch { get; set; }
 }

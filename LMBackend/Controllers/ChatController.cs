@@ -300,10 +300,48 @@ public class ChatController : ControllerBase
             parent.Title = title;
         }
 
+        // Save user message
+        ChatMessage userMessage = ChatMessage.FromDto(request);
+        userMessage.ChatId = id;
+        _context.ChatMessages.Add(userMessage);
+
+
+        // Create empty bot message to hold streaming data
+        int index = 0;
+        StringBuilder botReplyBuilder = new();
+        ChatMessage botMessage = new ChatMessage
+        {
+            Id = Guid.NewGuid(),
+            ChatId = id,
+            Text = string.Empty,
+            Role = Role.System,
+            Timestamp = DateTime.UtcNow,
+            Model = LlmClient.Instance.Model
+        };
+
         // Do RAG if user asked
         string ragResult = null;
         if (request.UseRetrieval)
         {
+            // Return a status text
+            string statusText = "**Doing RAG search...**";
+            botReplyBuilder.Append(statusText);
+            ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
+            {
+                ChatId = id,
+                MessageId = botMessage.Id,
+                ReplyMessageId = userMessage.Id,
+                Sequence = index,
+                Text = statusText,
+                Model = LlmClient.Instance.Model,
+                Status = StreamStatus.InProgress,
+                Timestamp = botMessage.Timestamp
+            };
+            string json = JsonSerializer.Serialize(chunk, options);
+            await Response.WriteAsync(json + "\n");
+            await Response.Body.FlushAsync();
+            index++;
+
             // 1. Generate embedding for user query
             float[] embedding = await LlmClient.Instance.GetEmbedding(request.Text);
             if (embedding == null)
@@ -331,26 +369,51 @@ public class ChatController : ControllerBase
             ragResult = string.Join("\n", chunkResult);
         }
 
-        // Save user message
-        ChatMessage userMessage = ChatMessage.FromDto(request);
-        userMessage.ChatId = id;
-        _context.ChatMessages.Add(userMessage);
-
-        // Create empty bot message to hold streaming data
-        ChatMessage botMessage = new ChatMessage
+        // Do web search
+        if (request.UseWebSearch)
         {
-            Id = Guid.NewGuid(),
-            ChatId = id,
-            Text = string.Empty,
-            Role = Role.System,
-            Timestamp = DateTime.UtcNow,
-            Model = LlmClient.Instance.Model
-        };
-        _context.ChatMessages.Add(botMessage);
+            // Return a status text
+            string statusText = "**Doing web search...**";
+            botReplyBuilder.Append(statusText);
+            ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
+            {
+                ChatId = id,
+                MessageId = botMessage.Id,
+                ReplyMessageId = userMessage.Id,
+                Sequence = index,
+                Text = statusText,
+                Model = LlmClient.Instance.Model,
+                Status = StreamStatus.InProgress,
+                Timestamp = botMessage.Timestamp
+            };
+            string json = JsonSerializer.Serialize(chunk, options);
+            await Response.WriteAsync(json + "\n");
+            await Response.Body.FlushAsync();
+            index++;
+            
+            // Search for web
+            GoogleSearchKeyword gk = await LlmClient.Instance.GetGoogleSearchKeyword(request.Text);
+            if (gk.isNeedGoogleSearch)
+            {
+                List<GoogleSearchResult> searchResults = await GoogleCustomSearchService.Instance.SearchAsync(gk.keywords);
+                if (searchResults != null && searchResults.Count > 0)
+                {
+                    // Get content from URL
+                    foreach (GoogleSearchResult result in searchResults)
+                    {
+                        string html = "";
+
+                        // Summarize the html to text
+                        string content = await LlmClient.Instance.SummarizeWebpage(html);
+
+                        // Create prompt
+                        ragResult += $"\nURL: {result.formattedUrl}\nTitle: {result.title}\nContent: {content}\n";
+                    }
+                }
+            }
+        }
 
         // Call streaming endpoint
-        int index = 0;
-        StringBuilder botReplyBuilder = new();
         IAsyncEnumerable<string> streamingTexts = LlmClient.Instance.GetChatResultStreaming(parent.Messages, request.Text, ragResult);
         await foreach (string part in streamingTexts.WithCancellation(ct))
         {
@@ -375,6 +438,7 @@ public class ChatController : ControllerBase
 
         // Save the botMessage's full text and userMessage
         botMessage.Text = botReplyBuilder.ToString();
+        _context.ChatMessages.Add(botMessage);
         await _context.SaveChangesAsync();
 
         // Signal the end of the stream
