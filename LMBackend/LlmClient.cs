@@ -95,17 +95,21 @@ internal class LlmClient
     public async Task<string> GetChatTitle(string question)
     {
         UserChatMessage userMessage = new UserChatMessage(question);
-        SystemChatMessage systemMessage = new SystemChatMessage("Summaize user's question, in few words, in plain text. It will be set to a conversation's title.");
-        ChatMessage[] messages = { userMessage, systemMessage };
+        SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant designed to generate concise titles for new chat conversations.  " +
+            "Your sole task is to create a title describing the user's input. " +
+            "**Do not attempt to answer the user's question or provide any further explanation. " +
+            "**Focus on extracting the core topic of the user's query and condensing it into a short, descriptive title. " +
+            "The title should be a single line in plain text in few words.");
+        ChatMessage[] messages = { systemMessage, userMessage };
         ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
         return RemoveThink(result.Value.Content[0].Text);
     }
 
     private static string RemoveThink(string text)
     {
-        //int start = text.IndexOf("<think>");
+        int start = text.IndexOf("<think>");
         int end = text.IndexOf("</think>") + 8;
-        if (end > 0)
+        if (start >= 0 && end > 0)
         {
             return text.Substring(end, text.Length - end);
         }
