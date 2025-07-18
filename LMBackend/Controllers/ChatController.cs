@@ -1,4 +1,5 @@
 ﻿using LMBackend.Models;
+using LMBackend.RAG;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -314,8 +315,6 @@ public class ChatController : ControllerBase
             }
 
             // 2. Query ChromaDB with embedding (REST)
-            // Create instance if needed
-            ChromaVectorStoreService.TryCreateChromaInstance();
             // Get collection id for this user
             string collectionId = await ChromaVectorStoreService.Instance.TryCreateCollection(userId);
             // Search for the text

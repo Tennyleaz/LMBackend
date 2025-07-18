@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Asp.Versioning;
+using LMBackend.RAG;
 
 namespace LMBackend.Controllers;
 
@@ -16,7 +17,6 @@ public class DocumentsController : Controller
     public DocumentsController(ChatContext context)
     {
         _context = context;
-        ChromaVectorStoreService.TryCreateChromaInstance();
     }
 
     /// <summary>

@@ -5,19 +5,19 @@ using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace LMBackend;
+namespace LMBackend.RAG;
 
 public partial class ChromaClient
 {
     private string _baseUrl;
 
     private HttpClient _httpClient;
-    private static System.Lazy<JsonSerializerOptions> _settings = new System.Lazy<JsonSerializerOptions>(CreateSerializerSettings, true);
+    private static Lazy<JsonSerializerOptions> _settings = new Lazy<JsonSerializerOptions>(CreateSerializerSettings, true);
     private JsonSerializerOptions _instanceSettings;
 
     public ChromaClient(string baseUrl, HttpClient httpClient)
     {
-        _baseUrl = (string.IsNullOrEmpty(baseUrl) || baseUrl.EndsWith("/"))
+        _baseUrl = string.IsNullOrEmpty(baseUrl) || baseUrl.EndsWith("/")
             ? baseUrl
             : baseUrl + "/";
         _httpClient = httpClient;
@@ -476,7 +476,7 @@ public partial class ChromaClient
                     if (status_ == 200)
                     {
                         var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var result_ = (bool)System.Convert.ChangeType(responseData_, typeof(bool));
+                        var result_ = (bool)Convert.ChangeType(responseData_, typeof(bool));
                         return result_;
                     }
                     else
@@ -538,7 +538,7 @@ public partial class ChromaClient
     public virtual async Task<CreateTenantResponse> Create_tenantAsync(CreateTenantPayload body, CancellationToken cancellationToken)
     {
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -651,7 +651,7 @@ public partial class ChromaClient
     public virtual async Task<GetTenantResponse> Get_tenantAsync(string tenant_name, CancellationToken cancellationToken)
     {
         if (tenant_name == null)
-            throw new System.ArgumentNullException("tenant_name");
+            throw new ArgumentNullException("tenant_name");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -775,7 +775,7 @@ public partial class ChromaClient
     public virtual async Task<ICollection<Database>> List_databasesAsync(string tenant, int? limit, int? offset, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -896,10 +896,10 @@ public partial class ChromaClient
     public virtual async Task<CreateDatabaseResponse> Create_databaseAsync(string tenant, CreateDatabasePayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -1016,10 +1016,10 @@ public partial class ChromaClient
     public virtual async Task<Database> Get_databaseAsync(string tenant, string database, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -1143,10 +1143,10 @@ public partial class ChromaClient
     public virtual async Task<DeleteDatabaseResponse> Delete_databaseAsync(string tenant, string database, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -1274,10 +1274,10 @@ public partial class ChromaClient
     public virtual async Task<ICollection<Collection>> List_collectionsAsync(string tenant, string database, int? limit, int? offset, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -1402,13 +1402,13 @@ public partial class ChromaClient
     public virtual async Task<Collection> Create_collectionAsync(string tenant, string database, CreateCollectionPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -1529,13 +1529,13 @@ public partial class ChromaClient
     public virtual async Task<Collection> Get_collectionAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -1663,16 +1663,16 @@ public partial class ChromaClient
     public virtual async Task<UpdateCollectionResponse> Update_collectionAsync(string tenant, string database, string collection_id, UpdateCollectionPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -1804,13 +1804,13 @@ public partial class ChromaClient
     public virtual async Task<UpdateCollectionResponse> Delete_collectionAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -1932,16 +1932,16 @@ public partial class ChromaClient
     public virtual async Task<AddCollectionRecordsResponse> Collection_addAsync(string tenant, string database, string collection_id, AddCollectionRecordsPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -2002,7 +2002,7 @@ public partial class ChromaClient
                     else
                     if (status_ == 400)
                     {
-                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        string responseText_ = response_.Content == null ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                         throw new ApiException("Invalid data for collection addition", status_, responseText_, headers_, null);
                     }
                     else
@@ -2050,13 +2050,13 @@ public partial class ChromaClient
     public virtual async Task<int> Collection_countAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -2185,16 +2185,16 @@ public partial class ChromaClient
     public virtual async Task<DeleteCollectionRecordsResponse> Collection_deleteAsync(string tenant, string database, string collection_id, DeleteCollectionRecordsPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -2327,16 +2327,16 @@ public partial class ChromaClient
     public virtual async Task<Collection> Fork_collectionAsync(string tenant, string database, string collection_id, ForkCollectionPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -2469,16 +2469,16 @@ public partial class ChromaClient
     public virtual async Task<GetResponse> Collection_getAsync(string tenant, string database, string collection_id, GetRequestPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -2615,16 +2615,16 @@ public partial class ChromaClient
     public virtual async Task<QueryResponse> Collection_queryAsync(string tenant, string database, string collection_id, int? limit, int? offset, QueryRequestPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -2761,16 +2761,16 @@ public partial class ChromaClient
     public virtual async Task<UpdateCollectionRecordsResponse> Collection_updateAsync(string tenant, string database, string collection_id, UpdateCollectionRecordsPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -2831,7 +2831,7 @@ public partial class ChromaClient
                     else
                     if (status_ == 404)
                     {
-                        string responseText_ = (response_.Content == null) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        string responseText_ = response_.Content == null ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                         throw new ApiException("Collection not found", status_, responseText_, headers_, null);
                     }
                     else
@@ -2879,16 +2879,16 @@ public partial class ChromaClient
     public virtual async Task<UpsertCollectionRecordsResponse> Collection_upsertAsync(string tenant, string database, string collection_id, UpsertCollectionRecordsPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         if (collection_id == null)
-            throw new System.ArgumentNullException("collection_id");
+            throw new ArgumentNullException("collection_id");
 
         if (body == null)
-            throw new System.ArgumentNullException("body");
+            throw new ArgumentNullException("body");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -3019,10 +3019,10 @@ public partial class ChromaClient
     public virtual async Task<int> Count_collectionsAsync(string tenant, string database, CancellationToken cancellationToken)
     {
         if (tenant == null)
-            throw new System.ArgumentNullException("tenant");
+            throw new ArgumentNullException("tenant");
 
         if (database == null)
-            throw new System.ArgumentNullException("database");
+            throw new ArgumentNullException("database");
 
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -3172,7 +3172,7 @@ public partial class ChromaClient
                     if (status_ == 200)
                     {
                         var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var result_ = (string)System.Convert.ChangeType(responseData_, typeof(string));
+                        var result_ = (string)Convert.ChangeType(responseData_, typeof(string));
                         return result_;
                     }
                     else
@@ -3199,8 +3199,8 @@ public partial class ChromaClient
     {
         public ObjectResponseResult(T responseObject, string responseText)
         {
-            this.Object = responseObject;
-            this.Text = responseText;
+            Object = responseObject;
+            Text = responseText;
         }
 
         public T Object { get; }
@@ -3214,7 +3214,7 @@ public partial class ChromaClient
     {
         if (response == null || response.Content == null)
         {
-            return new ObjectResponseResult<T>(default(T), string.Empty);
+            return new ObjectResponseResult<T>(default, string.Empty);
         }
 
         if (ReadResponseAsString)
@@ -3256,9 +3256,9 @@ public partial class ChromaClient
             return "";
         }
 
-        if (value is System.Enum)
+        if (value is Enum)
         {
-            var name = System.Enum.GetName(value.GetType(), value);
+            var name = Enum.GetName(value.GetType(), value);
             if (name != null)
             {
                 var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
@@ -3272,17 +3272,17 @@ public partial class ChromaClient
                     }
                 }
 
-                var converted = System.Convert.ToString(System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(value.GetType()), cultureInfo));
+                var converted = Convert.ToString(Convert.ChangeType(value, Enum.GetUnderlyingType(value.GetType()), cultureInfo));
                 return converted == null ? string.Empty : converted;
             }
         }
         else if (value is bool)
         {
-            return System.Convert.ToString((bool)value, cultureInfo).ToLowerInvariant();
+            return Convert.ToString((bool)value, cultureInfo).ToLowerInvariant();
         }
         else if (value is byte[])
         {
-            return System.Convert.ToBase64String((byte[])value);
+            return Convert.ToBase64String((byte[])value);
         }
         else if (value is string[])
         {
@@ -3290,7 +3290,7 @@ public partial class ChromaClient
         }
         else if (value.GetType().IsArray)
         {
-            var valueArray = (System.Array)value;
+            var valueArray = (Array)value;
             var valueTextArray = new string[valueArray.Length];
             for (var i = 0; i < valueArray.Length; i++)
             {
@@ -3299,7 +3299,7 @@ public partial class ChromaClient
             return string.Join(",", valueTextArray);
         }
 
-        var result = System.Convert.ToString(value, cultureInfo);
+        var result = Convert.ToString(value, cultureInfo);
         return result == null ? "" : result;
     }
 }
@@ -3386,7 +3386,7 @@ public partial class Collection
 
     [JsonPropertyName("id")]
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-    public System.Guid Id { get; set; }
+    public Guid Id { get; set; }
 
     [JsonPropertyName("log_position")]
     public long Log_position { get; set; }
@@ -3542,7 +3542,7 @@ public partial class Database
 
     [JsonPropertyName("id")]
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-    public System.Guid Id { get; set; }
+    public Guid Id { get; set; }
 
     [JsonPropertyName("name")]
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -3603,7 +3603,7 @@ public partial class DeleteDatabaseResponse
 }
 
 
-public partial class EmbeddingFunctionConfiguration
+/*public partial class EmbeddingFunctionConfiguration
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3638,7 +3638,7 @@ public partial class EmbeddingFunctionNewConfiguration
         set { _additionalProperties = value; }
     }
 
-}
+}*/
 
 
 public partial class ErrorResponse
@@ -4246,18 +4246,18 @@ public partial class UpsertCollectionRecordsResponse
 //}
 
 
-public enum EmbeddingFunctionConfigurationType
+/*public enum EmbeddingFunctionConfigurationType
 {
 
     [EnumMember(Value = @"legacy")]
     Legacy = 0,
 
-}
+}*/
 
 
 
 
-public partial class ApiException : System.Exception
+public partial class ApiException : Exception
 {
     public int StatusCode { get; private set; }
 
@@ -4265,8 +4265,8 @@ public partial class ApiException : System.Exception
 
     public IReadOnlyDictionary<string, IEnumerable<string>> Headers { get; private set; }
 
-    public ApiException(string message, int statusCode, string response, IReadOnlyDictionary<string, IEnumerable<string>> headers, System.Exception innerException)
-        : base(message + "\n\nStatus: " + statusCode + "\nResponse: \n" + ((response == null) ? "(null)" : response.Substring(0, response.Length >= 512 ? 512 : response.Length)), innerException)
+    public ApiException(string message, int statusCode, string response, IReadOnlyDictionary<string, IEnumerable<string>> headers, Exception innerException)
+        : base(message + "\n\nStatus: " + statusCode + "\nResponse: \n" + (response == null ? "(null)" : response.Substring(0, response.Length >= 512 ? 512 : response.Length)), innerException)
     {
         StatusCode = statusCode;
         Response = response;
@@ -4283,7 +4283,7 @@ public partial class ApiException<TResult> : ApiException
 {
     public TResult Result { get; private set; }
 
-    public ApiException(string message, int statusCode, string response, IReadOnlyDictionary<string, IEnumerable<string>> headers, TResult result, System.Exception innerException)
+    public ApiException(string message, int statusCode, string response, IReadOnlyDictionary<string, IEnumerable<string>> headers, TResult result, Exception innerException)
         : base(message, statusCode, response, headers, innerException)
     {
         Result = result;

@@ -1,6 +1,6 @@
 ﻿using LMBackend.Models;
 
-namespace LMBackend;
+namespace LMBackend.RAG;
 
 public class ChromaVectorStoreService
 {
@@ -9,20 +9,24 @@ public class ChromaVectorStoreService
     private const string TENANT = "tenny";
     private const string DATABASE = "tennydb";
 
-    public static ChromaVectorStoreService Instance { get; private set; }
+    private static ChromaVectorStoreService _instance;
+    public static ChromaVectorStoreService Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = new ChromaVectorStoreService();
+            }
+            return _instance;
+        }
+    }
 
     private ChromaVectorStoreService()
     {
         _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri(Constants.CHROMA_ENDPOINT);
         _chromaClient = new ChromaClient(Constants.CHROMA_ENDPOINT, _httpClient);
-    }
-
-    public static void TryCreateChromaInstance()
-    {
-        if (Instance != null)
-            return;
-        Instance = new ChromaVectorStoreService();
     }
 
     /// <summary>

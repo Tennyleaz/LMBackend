@@ -4,7 +4,7 @@ using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using Xceed.Words.NET;
 
-namespace LMBackend;
+namespace LMBackend.RAG;
 
 public static class DocumentSplitter
 {
@@ -129,11 +129,11 @@ public static class DocumentSplitter
             var sb = new StringBuilder();
             Word prevWord = null;
             var avgCharWidth = Convert.ToInt32(Words.Average(w => w.BoundingBox.Width / w.Text.Length));
-            if (leftMargin > 0) sb.Append(new String(' ', (int)(Words[0].BoundingBox.Left - leftMargin) / avgCharWidth));
+            if (leftMargin > 0) sb.Append(new string(' ', (int)(Words[0].BoundingBox.Left - leftMargin) / avgCharWidth));
             foreach (var word in Words.OrderBy(w => w.BoundingBox.Left))
             {
                 if (prevWord != null && word.BoundingBox.Left - prevWord.BoundingBox.Right > avgCharWidth)
-                    sb.Append(new String(' ', (int)(word.BoundingBox.Left - prevWord.BoundingBox.Right) / avgCharWidth));
+                    sb.Append(new string(' ', (int)(word.BoundingBox.Left - prevWord.BoundingBox.Right) / avgCharWidth));
                 sb.Append(word.Text + " ");
                 prevWord = word;
             }
@@ -283,7 +283,7 @@ public static class DocumentSplitter
                 break;
 
             // For overlap, move start forward
-            start += (maxChunkWords - overlapWords);
+            start += maxChunkWords - overlapWords;
             if (start < 0) start = 0; // safety
         }
 

@@ -1,4 +1,4 @@
-﻿namespace LMBackend;
+﻿namespace LMBackend.RAG;
 
 public class ChromaRagChunkResult
 {
