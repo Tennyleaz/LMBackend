@@ -22,10 +22,12 @@ namespace LMBackend.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly ChatContext _context;
+    private readonly WebScraper _scraper;
 
     public ChatController(ChatContext context)
     {
         _context = context;
+        _scraper = new WebScraper();
     }
 
     // GET: api/Chat
@@ -401,7 +403,7 @@ public class ChatController : ControllerBase
                     // Get content from URL
                     foreach (GoogleSearchResult result in searchResults)
                     {
-                        string html = "";
+                        string html = await _scraper.Scrap(result.formattedUrl);
 
                         // Summarize the html to text
                         string content = await LlmClient.Instance.SummarizeWebpage(html);
@@ -409,6 +411,13 @@ public class ChatController : ControllerBase
                         // Create prompt
                         ragResult += $"\nURL: {result.formattedUrl}\nTitle: {result.title}\nContent: {content}\n";
                     }
+                }
+                else
+                {
+                    Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                    await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to search Google." }, options) + "\n", ct);
+                    await Response.Body.FlushAsync();
+                    return;
                 }
             }
         }
