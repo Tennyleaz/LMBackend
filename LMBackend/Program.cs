@@ -8,6 +8,8 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
+using Asp.Versioning;
+using Asp.Versioning.Conventions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,27 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 //builder.Services.AddDbContext<ChatContext>(opt => opt.UseSqlite("Data Source=chat.db"));
 string connection = $"Host={Constants.PGSQL_IP};Port={Constants.PGSQL_PORT};Database=lmdb;Username=lmbackend;Password=sql_pass";
 builder.Services.AddDbContext<ChatContext>(opt => opt.UseNpgsql(connection));
+
+// Add API version
+// see:
+// https://github.com/dotnet/aspnet-api-versioning/wiki/New-Services-Quick-Start
+// https://medium.com/@dipendupaul/documenting-a-versioned-net-web-api-using-swagger-eec0fe7aa010
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+}).AddMvc(options =>
+{
+    // Automatically applies an api version based on the name of the defining controller's namespace
+    options.Conventions.Add(new VersionByNamespaceConvention());
+}).AddApiExplorer(setup =>
+{
+    // Call AddApiExplorer(), so swagger will automatically add API version 
+    setup.GroupNameFormat = "'v'VVV";
+    setup.SubstituteApiVersionInUrl = true;
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -85,7 +108,7 @@ builder.Services.AddCors(options =>
                       policy =>
                       {
                           policy.AllowAnyOrigin()
-                          .AllowAnyHeader()                                                  
+                          .AllowAnyHeader()
                           .AllowAnyMethod();
                       });
 });

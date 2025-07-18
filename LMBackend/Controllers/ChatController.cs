@@ -11,11 +11,13 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Asp.Versioning;
 
 namespace LMBackend.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
+[ApiVersion("1.0")]
 public class ChatController : ControllerBase
 {
     private readonly ChatContext _context;
