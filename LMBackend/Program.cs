@@ -133,4 +133,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Add websocket support for audio streaming
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(1)
+};
+app.UseWebSockets(webSocketOptions);
+
 app.Run();

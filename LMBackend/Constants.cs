@@ -15,5 +15,9 @@
         public const string PGSQL_IP = "192.168.41.133";
         public const string PGSQL_PORT = "9091";
         public const string SCRAP_ENDPOINT = LLM_BASE_URL + ":9094/scrape";
+        public const string WHISPER_MODEL_PATH = "";
+        public const string WHISPER_DIR = "";
+        public const int WHISPER_CHUNK_SECONDS = 10;
+        public const int WHISPER_SAMPLE_RATE = 16000;
     }
 }
