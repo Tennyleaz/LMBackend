@@ -106,7 +106,7 @@ public class WebSocketController : Controller
     private static string RunWhisperChunk(string wavPath, int offsetSeconds)
     {
         string args = $"-m \"{Constants.WHISPER_MODEL_PATH}\" -f \"{wavPath}\" --no-timestamps -otxt --offset_t {offsetSeconds}";
-        ProcessStartInfo psi = new ProcessStartInfo("/bin/bash", $"-c \"cd {Constants.WHISPER_DIR} && ./main {args}\"")
+        ProcessStartInfo psi = new ProcessStartInfo("/bin/bash", $"-c \"cd {Constants.WHISPER_BIN_PATH} && ./main {args}\"")
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
