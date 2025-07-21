@@ -13,4 +13,5 @@ public class ChatMessageStreamResponse
     public string Text { get; set; }
     public string Model { get; set; }
     public ChatDto ChatModified { get; set; }
+    public string Error { get; set; }
 }

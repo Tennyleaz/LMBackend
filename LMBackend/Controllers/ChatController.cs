@@ -268,9 +268,7 @@ public class ChatController : ControllerBase
         Guid userId = User.GetUserId();
         if (userId == Guid.Empty)
         {
-            Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "User id not found" }, options) + "\n", ct);
-            await Response.Body.FlushAsync();
+            await WriteJsonStreamError(StatusCodes.Status401Unauthorized, "User id not found", id, options);
             return;
         }
 
@@ -281,9 +279,7 @@ public class ChatController : ControllerBase
 
         if (parent == null)
         {
-            Response.StatusCode = StatusCodes.Status404NotFound;
-            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Chat not found" }, options) + "\n", ct);
-            await Response.Body.FlushAsync();
+            await WriteJsonStreamError(StatusCodes.Status401Unauthorized, "Chat id not found", id, options);
             return;
         }
 
@@ -306,9 +302,7 @@ public class ChatController : ControllerBase
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to generate title." }, options) + "\n", ct);
-                await Response.Body.FlushAsync();
+                await WriteJsonStreamError(StatusCodes.Status503ServiceUnavailable, "Failed to generate title.", id, options);
                 return;
             }
         }
@@ -346,9 +340,7 @@ public class ChatController : ControllerBase
             float[] embedding = await LlmClient.Instance.GetEmbedding(request.Text);
             if (embedding == null)
             {
-                Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to get embeddings." }, options) + "\n", ct);
-                await Response.Body.FlushAsync();
+                await WriteJsonStreamError(StatusCodes.Status503ServiceUnavailable, "Failed to get embeddings.", id, options);
                 return;
             }
 
@@ -359,9 +351,7 @@ public class ChatController : ControllerBase
             IList<ChromaRagChunkResult> chunkResult = await ChromaVectorStoreService.Instance.SearchAsync(collectionId, parent.Id, embedding, 5, null);
             if (chunkResult == null)
             {
-                Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to search ChromaDB." }, options) + "\n", ct);
-                await Response.Body.FlushAsync();
+                await WriteJsonStreamError(StatusCodes.Status503ServiceUnavailable, "Failed to search ChromaDB.", id, options);
                 return;
             }
 
@@ -382,7 +372,7 @@ public class ChatController : ControllerBase
             GoogleSearchKeyword gk = await LlmClient.Instance.GetGoogleSearchKeyword(request.Text);
             if (gk.isNeedGoogleSearch)
             {
-                List<GoogleSearchResult> searchResults = await GoogleCustomSearchService.Instance.SearchAsync(gk.keywords, 3);
+                List<GoogleSearchResult> searchResults = await GoogleCustomSearchService.Instance.SearchAsync(gk.keywords, 4);
                 if (searchResults != null && searchResults.Count > 0)
                 {
                     // Get content from URL
@@ -425,9 +415,7 @@ public class ChatController : ControllerBase
                 }
                 else
                 {
-                    Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-                    await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to search Google." }, options) + "\n", ct);
-                    await Response.Body.FlushAsync();
+                    await WriteJsonStreamError(StatusCodes.Status503ServiceUnavailable, "Failed to search Google.", id, options);
                     return;
                 }
             }
@@ -447,9 +435,7 @@ public class ChatController : ControllerBase
         catch (Exception ex) 
         {
             Console.WriteLine(ex);
-            Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to generate LLM response." }, options) + "\n", ct);
-            await Response.Body.FlushAsync();
+            await WriteJsonStreamError(StatusCodes.Status503ServiceUnavailable, "Failed to generate LLM response.", id, options);
             return;
         }
 
@@ -521,5 +507,21 @@ public class ChatController : ControllerBase
         string json = JsonSerializer.Serialize(chunk, options);
         await Response.WriteAsync(json + "\n");
         await Response.Body.FlushAsync();
+    }
+
+    private async Task WriteJsonStreamError(int statusCode, string errorMessage, Guid chatId, JsonSerializerOptions options)
+    {
+        ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
+        {
+            ChatId = chatId,
+            Model = LlmClient.Instance?.Model,
+            Status = StreamStatus.Failed,
+            Timestamp = DateTime.UtcNow,
+            Error = errorMessage
+        };
+        string json = JsonSerializer.Serialize(chunk, options);
+        await Response.WriteAsync(json + "\n");
+        await Response.Body.FlushAsync();
+        //Response.StatusCode = statusCode;  // Cannot set StatusCode after writing to body!
     }
 }
