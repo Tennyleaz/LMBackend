@@ -16,7 +16,7 @@ internal class GoogleCustomSearchService
         {
             if (_instance == null)
             {
-                string apiKey = Environment.GetEnvironmentVariable("GOOGLE_SEARCH_TOKEN");
+                string apiKey = Environment.GetEnvironmentVariable("GOOGLE_SEARCH_KEY");
                 _instance = new GoogleCustomSearchService(apiKey);
             }
             return _instance;
@@ -33,9 +33,9 @@ internal class GoogleCustomSearchService
         _httpClient = new HttpClient();
     }
 
-    public async Task<List<GoogleSearchResult>> SearchAsync(string query)
+    public async Task<List<GoogleSearchResult>> SearchAsync(string query, int count = 3)
     {
-        string url = $"https://www.googleapis.com/customsearch/v1?key={_apiKey}&cx={SEARCH_ENGINE_ID}&q={Uri.EscapeDataString(query)}";
+        string url = $"https://www.googleapis.com/customsearch/v1?key={_apiKey}&cx={SEARCH_ENGINE_ID}&q={Uri.EscapeDataString(query)}&num={count}";
         try
         {
             using HttpResponseMessage response = await _httpClient.GetAsync(url);
@@ -51,7 +51,7 @@ internal class GoogleCustomSearchService
         }
     }
 
-    public List<GoogleSearchResult> Search(string query, bool isLatest)
+    /*public List<GoogleSearchResult> Search(string query, bool isLatest)
     {
         try
         {
@@ -76,7 +76,7 @@ internal class GoogleCustomSearchService
             Console.WriteLine("Search() error: " + ex);
             return null;
         }
-    }
+    }*/
 }
 
 internal class GoogleSearch

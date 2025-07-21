@@ -292,14 +292,25 @@ public class ChatController : ControllerBase
         ChatDto modifiedChat = null;
         if (parent.Messages.Count == 0)
         {
-            string title = await LlmClient.Instance.GetChatTitle(request.Text);
-            modifiedChat = new ChatDto
+            try
             {
-                Id = id,
-                CreatedTime = parent.CreatedTime,
-                Title = title,
-            };
-            parent.Title = title;
+                string title = await LlmClient.Instance.GetChatTitle(request.Text);
+                modifiedChat = new ChatDto
+                {
+                    Id = id,
+                    CreatedTime = parent.CreatedTime,
+                    Title = title,
+                };
+                parent.Title = title;
+            } 
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to generate title." }, options) + "\n", ct);
+                await Response.Body.FlushAsync();
+                return;
+            }
         }
 
         // Save user message
@@ -326,22 +337,9 @@ public class ChatController : ControllerBase
         if (request.UseRetrieval)
         {
             // Return a status text
-            string statusText = "**Doing RAG search...**";
+            string statusText = "*Doing RAG search...*  \n";
             botReplyBuilder.Append(statusText);
-            ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
-            {
-                ChatId = id,
-                MessageId = botMessage.Id,
-                ReplyMessageId = userMessage.Id,
-                Sequence = index,
-                Text = statusText,
-                Model = LlmClient.Instance.Model,
-                Status = StreamStatus.InProgress,
-                Timestamp = botMessage.Timestamp
-            };
-            string json = JsonSerializer.Serialize(chunk, options);
-            await Response.WriteAsync(json + "\n");
-            await Response.Body.FlushAsync();
+            await WriteJsonStreamProgress(statusText, index, id, botMessage, userMessage.Id, options);
             index++;
 
             // 1. Generate embedding for user query
@@ -375,42 +373,55 @@ public class ChatController : ControllerBase
         if (request.UseWebSearch)
         {
             // Return a status text
-            string statusText = "**Doing web search...**";
+            string statusText = "*Doing web search...*  \n";
             botReplyBuilder.Append(statusText);
-            ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
-            {
-                ChatId = id,
-                MessageId = botMessage.Id,
-                ReplyMessageId = userMessage.Id,
-                Sequence = index,
-                Text = statusText,
-                Model = LlmClient.Instance.Model,
-                Status = StreamStatus.InProgress,
-                Timestamp = botMessage.Timestamp
-            };
-            string json = JsonSerializer.Serialize(chunk, options);
-            await Response.WriteAsync(json + "\n");
-            await Response.Body.FlushAsync();
+            await WriteJsonStreamProgress(statusText, index, id, botMessage, userMessage.Id, options);
             index++;
             
             // Search for web
             GoogleSearchKeyword gk = await LlmClient.Instance.GetGoogleSearchKeyword(request.Text);
             if (gk.isNeedGoogleSearch)
             {
-                List<GoogleSearchResult> searchResults = await GoogleCustomSearchService.Instance.SearchAsync(gk.keywords);
+                List<GoogleSearchResult> searchResults = await GoogleCustomSearchService.Instance.SearchAsync(gk.keywords, 3);
                 if (searchResults != null && searchResults.Count > 0)
                 {
                     // Get content from URL
-                    foreach (GoogleSearchResult result in searchResults)
+                    foreach (GoogleSearchResult searchResult in searchResults)
                     {
-                        string html = await _scraper.Scrap(result.formattedUrl);
+                        string html = await _scraper.Scrap(searchResult.link);
+                        if (string.IsNullOrEmpty(html))
+                        {
+                            Console.WriteLine("HTML is empty for link: " + searchResult.link);
+                            continue;
+                        }
 
                         // Summarize the html to text
-                        string content = await LlmClient.Instance.SummarizeWebpage(html);
+                        string content;
+                        try
+                        {
+                            content = await LlmClient.Instance.SummarizeWebpage(html);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Failed to generate summary for:" + searchResult.link + "\nError: " + ex.Message);
+                            continue;
+                        }
 
                         // Create prompt
-                        ragResult += $"\nURL: {result.formattedUrl}\nTitle: {result.title}\nContent: {content}\n";
+                        ragResult += $"\nURL: {searchResult.formattedUrl}\nTitle: {searchResult.title}\nContent: {content}\n";
+
+                        // Tell client what we have searched
+                        //string searchedSite = $" - [{searchResult.title}]({searchResult.link})\n";
+                        string searchedSite = $" - <a href=\"{searchResult.link}\" target=\"_blank\">{searchResult.title}</a>  \n";
+                        botReplyBuilder.Append(searchedSite);
+                        await WriteJsonStreamProgress(searchedSite, index, id, botMessage, userMessage.Id, options);
+                        index++;
                     }
+
+                    // Append a linebreak after list
+                    botReplyBuilder.Append("\n");
+                    await WriteJsonStreamProgress("\n", index, id, botMessage, userMessage.Id, options);
+                    index++;
                 }
                 else
                 {
@@ -423,26 +434,23 @@ public class ChatController : ControllerBase
         }
 
         // Call streaming endpoint
-        IAsyncEnumerable<string> streamingTexts = LlmClient.Instance.GetChatResultStreaming(parent.Messages, request.Text, ragResult);
-        await foreach (string part in streamingTexts.WithCancellation(ct))
+        try
         {
-            botReplyBuilder.Append(part);
-            ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
+            IAsyncEnumerable<string> streamingTexts = LlmClient.Instance.GetChatResultStreaming(parent.Messages, request.Text, ragResult);
+            await foreach (string part in streamingTexts.WithCancellation(ct))
             {
-                ChatId = id,
-                MessageId = botMessage.Id,
-                ReplyMessageId = userMessage.Id,
-                Sequence = index,
-                Text = part,
-                Model = LlmClient.Instance.Model,
-                Status = StreamStatus.InProgress,
-                Timestamp = botMessage.Timestamp
-            };
-
-            string json = JsonSerializer.Serialize(chunk, options);
-            await Response.WriteAsync(json + "\n");
+                botReplyBuilder.Append(part);
+                await WriteJsonStreamProgress(part, index, id, botMessage, userMessage.Id, options);
+                index++;
+            }
+        }
+        catch (Exception ex) 
+        {
+            Console.WriteLine(ex);
+            Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Failed to generate LLM response." }, options) + "\n", ct);
             await Response.Body.FlushAsync();
-            index++;
+            return;
         }
 
         // Save the botMessage's full text and userMessage
@@ -494,5 +502,24 @@ public class ChatController : ControllerBase
     private bool ChatExists(Guid id)
     {
         return _context.Chats.Any(e => e.Id == id);
+    }
+
+    private async Task WriteJsonStreamProgress(string part, int index, Guid chatId, ChatMessage botMessage, Guid replyMessagId, JsonSerializerOptions options)
+    {
+        ChatMessageStreamResponse chunk = new ChatMessageStreamResponse
+        {
+            ChatId = chatId,
+            MessageId = botMessage.Id,
+            ReplyMessageId = replyMessagId,
+            Sequence = index,
+            Text = part,
+            Model = LlmClient.Instance.Model,
+            Status = StreamStatus.InProgress,
+            Timestamp = botMessage.Timestamp
+        };
+
+        string json = JsonSerializer.Serialize(chunk, options);
+        await Response.WriteAsync(json + "\n");
+        await Response.Body.FlushAsync();
     }
 }

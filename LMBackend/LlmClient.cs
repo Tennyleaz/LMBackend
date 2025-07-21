@@ -147,6 +147,12 @@ internal class LlmClient
         SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant designed to summarize web pages. " +
             "Your sole task is to summarize input web page html into text. " +
             "If given input is not able to summarize, returns the input directly.");
+
+        // TODO: make good token count
+        if (html.Length > Constants.MAX_TOKEN + 500)
+        {
+            html = html.Substring(0, Constants.MAX_TOKEN + 500);
+        }
         UserChatMessage userMessage = new UserChatMessage(html);
         ChatMessage[] messages = { systemMessage, userMessage };
         ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
