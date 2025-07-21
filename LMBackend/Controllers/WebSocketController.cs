@@ -1,14 +1,22 @@
 ﻿using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
-using System.IO;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LMBackend.Controllers;
 
-[Route("/ws")]
+[Route("/api/v{version:apiVersion}/ws")]
+[ApiController]
+[ApiVersion("1.0")]
 public class WebSocketController : Controller
 {
+    public WebSocketController()
+    {
+
+    }
+
+    [HttpGet]
     public async Task Get()
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
@@ -30,7 +38,7 @@ public class WebSocketController : Controller
         string webmPath = Path.Combine(tempDir, "input.webm");
         string pcmPath = Path.Combine(tempDir, "chunk.wav");
 
-        await using var webmStream = System.IO.File.Create(webmPath);
+        await using FileStream webmStream = System.IO.File.Create(webmPath);
 
         byte[] buffer = new byte[8192];
         Stopwatch stopwatch = Stopwatch.StartNew();
