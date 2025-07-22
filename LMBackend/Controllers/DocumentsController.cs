@@ -13,10 +13,11 @@ namespace LMBackend.Controllers;
 public class DocumentsController : Controller
 {
     private readonly ChatContext _context;
-
-    public DocumentsController(ChatContext context)
+    private readonly ILlmService _llmClient;
+    public DocumentsController(ChatContext context, ILlmService llmService)
     {
         _context = context;
+        _llmClient = llmService;
     }
 
     /// <summary>
@@ -77,11 +78,10 @@ public class DocumentsController : Controller
         List<string> documentChunks = DocumentSplitter.SplitTextByWords(lines);
 
         // Call embedding API for each chunk
-        await LlmClient.TryCreateLlmInstance();
         List<ChromaChunk> chromaChunks = new List<ChromaChunk>();
         for (int i=0; i< documentChunks.Count; i++)
         {
-            float[] embedding = await LlmClient.Instance.GetEmbedding(documentChunks[i]);
+            float[] embedding = await _llmClient.GetEmbedding(documentChunks[i]);
             if (embedding == null || embedding.Length == 0)
             {
                 continue;

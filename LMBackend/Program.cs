@@ -13,6 +13,11 @@ using Asp.Versioning.Conventions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add my dependencies
+builder.Services.AddSingleton<IDockerHelper, DockerHelper>();
+builder.Services.AddSingleton<ILlmService, LlmClient>();
+builder.Services.AddSingleton<ISerpService, LMBackend.RAG.SerpService>();
+
 // Add services to the container.
 // Fix navigation property cycle in JSON
 builder.Services.AddControllers().AddJsonOptions(options =>

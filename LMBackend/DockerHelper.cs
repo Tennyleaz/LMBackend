@@ -6,21 +6,17 @@ using System.Threading.Tasks;
 
 namespace LMBackend;
 
-internal static class DockerHelper
+internal class DockerHelper : IDockerHelper
 {    
-    private static DockerClient _dockerClient;
-    private static string _currentModel;
+    private readonly DockerClient _dockerClient;
+    private string _currentModel;
 
-    private static DockerClient TryCreateDockerClient()
+    public DockerHelper()
     {
-        if (_dockerClient == null)
-        {
-            _dockerClient = new DockerClientConfiguration(new Uri(Constants.DOCKER_ENDPOINT)).CreateClient();
-        }
-        return _dockerClient;
+        _dockerClient = new DockerClientConfiguration(new Uri(Constants.DOCKER_ENDPOINT)).CreateClient();
     }
     
-    private static async Task TryStrartDefaultDocker()
+    private async Task TryStrartDefaultDocker()
     {
         ContainerListResponse container = await GetCurrentContainer();
         if (container == null)
@@ -32,11 +28,12 @@ internal static class DockerHelper
             CreateContainerResponse createResponse = await _dockerClient.Containers.CreateContainerAsync(createParams);
             if (await _dockerClient.Containers.StartContainerAsync(createResponse.ID, new ContainerStartParameters { }))
             {
+                _currentModel = Constants.DEFAULT_MODEL;
             }
         }
     }
 
-    public static async Task<string> GetCurrentModelName()
+    public async Task<string> GetCurrentModelName()
     {
         if (!string.IsNullOrEmpty(_currentModel))
         {
@@ -51,10 +48,9 @@ internal static class DockerHelper
         return dockerModel.Model;
     }
 
-    public static async Task<LlmDocker> GetCurrentModel()
+    public async Task<LlmDocker> GetCurrentModel()
     {
         // Create clients first
-        TryCreateDockerClient();
         await TryStrartDefaultDocker();
 
         // Get current running one
@@ -66,11 +62,8 @@ internal static class DockerHelper
         return dockerModel;
     }
 
-    public static async Task<LlmDocker> ChangeCurrentModel(string modelName)
+    public async Task<LlmDocker> ChangeCurrentModel(string modelName)
     {
-        // Create clients first
-        TryCreateDockerClient();
-
         // Find and stop the docker container
         ContainerListResponse container = await GetCurrentContainer();
         if (container != null)
@@ -97,7 +90,7 @@ internal static class DockerHelper
         return null;
     }
 
-    public static async Task<ContainerListResponse> GetCurrentContainer()
+    public async Task<ContainerListResponse> GetCurrentContainer()
     {
         IList<ContainerListResponse> containers = await _dockerClient.Containers.ListContainersAsync(CreateListParams());
         return containers.FirstOrDefault();
@@ -214,7 +207,7 @@ internal static class DockerHelper
     /// Check "/metrics" endpoint available for 2s.
     /// </summary>
     /// <returns></returns>
-    public static async Task<bool> CheckMetrics(string modelName)
+    public async Task<bool> CheckMetrics(string modelName)
     {
         HttpClient http = new HttpClient();
         http.Timeout = TimeSpan.FromSeconds(2); // Short timeout per attempt

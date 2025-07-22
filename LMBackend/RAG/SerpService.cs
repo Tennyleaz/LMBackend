@@ -3,12 +3,12 @@ using System.Text.Json;
 
 namespace LMBackend.RAG;
 
-internal static class SerpService
+internal class SerpService : ISerpService
 {
-    private static HttpClient _httpClient;
+    private HttpClient _httpClient;
     private const string URL = "https://serpapi.com/search";
 
-    public static async Task<SerpResultSchema> SearchGoogle(string query)
+    public async Task<SerpResultSchema> SearchGoogle(string query)
     {
         if (_httpClient == null)
         {
@@ -48,7 +48,7 @@ internal static class SerpService
     }
 }
 
-internal class SerpResultSchema
+public class SerpResultSchema
 {
     //public string search_metadata { get; set; }
     //public string search_parameters { get; set; }
@@ -56,7 +56,7 @@ internal class SerpResultSchema
     public SerpOrganicResult[] organic_results { get; set; }
 }
 
-internal class SerpOrganicResult
+public class SerpOrganicResult
 {
     public int position { get; set; }
     public string title { get; set; }

@@ -15,10 +15,12 @@ namespace LMBackend.Controllers;
 public class ModelsController : Controller
 {
     private readonly ChatContext _context;
+    private readonly IDockerHelper _dockerHelper;
 
-    public ModelsController(ChatContext context)
+    public ModelsController(ChatContext context, IDockerHelper dockerHelper)
     {
         _context = context;
+        _dockerHelper = dockerHelper;
     }
 
     /// <summary>
@@ -37,10 +39,10 @@ public class ModelsController : Controller
     /// </summary>
     /// <returns></returns>
     [HttpGet("docker")]
-    //[Authorize]
+    [Authorize]
     public async Task<ActionResult<LlmDocker>> GetCurrent()
     {
-        LlmDocker dockerModel = await DockerHelper.GetCurrentModel();
+        LlmDocker dockerModel = await _dockerHelper.GetCurrentModel();
         if (dockerModel != null)
         {
             return Ok(dockerModel);
@@ -53,10 +55,10 @@ public class ModelsController : Controller
     /// </summary>
     /// <returns></returns>
     [HttpPost("docker")]
-    //[Authorize]
+    [Authorize]
     public async Task<ActionResult<LlmDocker>> SetCurrent(LlmDockerDto request)
     {
-        LlmDocker dockerModel = await DockerHelper.ChangeCurrentModel(request.Model);
+        LlmDocker dockerModel = await _dockerHelper.ChangeCurrentModel(request.Model);
         if (dockerModel != null)
         {
             return Ok(dockerModel);
@@ -70,19 +72,19 @@ public class ModelsController : Controller
     /// <returns></returns>
     [HttpGet("healthCheck")]
     public async Task<IActionResult> HealthCheck()
-    {
+    {        
         // Check if it is running first       
-        ContainerListResponse container = await DockerHelper.GetCurrentContainer();
+        ContainerListResponse container = await _dockerHelper.GetCurrentContainer();
         if (container.State != "created" && container.State != "running")
         {
             return StatusCode(500, "vLLM container state error: " + container.State);
         }
 
         // Check if model name is not empty
-        string modelName = await DockerHelper.GetCurrentModelName();
+        string modelName = await _dockerHelper.GetCurrentModelName();
 
         // Check metrics endpoint status once
-        bool isReady = await DockerHelper.CheckMetrics(modelName);
+        bool isReady = await _dockerHelper.CheckMetrics(modelName);
         if (isReady) 
         {
             return Ok();           

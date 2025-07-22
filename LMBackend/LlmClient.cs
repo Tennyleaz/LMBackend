@@ -8,41 +8,45 @@ using System.Text.Json;
 
 namespace LMBackend;
 
-internal class LlmClient
+internal class LlmClient : ILlmService
 {
-    private readonly ChatClient _client;
+    private ChatClient _client;
     private readonly HttpClient _httpClient;
+    private readonly IDockerHelper _dockerHelper;
 
-    public static LlmClient Instance { get; private set; }
-
-    public static async Task TryCreateLlmInstance()
+    public LlmClient(IDockerHelper dockerHelper)
     {
-        if (Instance != null)
-            return;
-        string modelName = await DockerHelper.GetCurrentModelName();
-        Instance = new LlmClient(Constants.LLM_KEY, modelName);
-    }
-
-    public string Model { get; private set; }
-
-    private LlmClient(string apiKey, string model)
-    {
-        Model = model;
-        _client = new ChatClient(
-            options: new OpenAIClientOptions()
-            {
-                Endpoint = new Uri(Constants.LLM_ENDPOINT)
-            },
-            model: model,
-            credential: new ApiKeyCredential(apiKey)
-        );
         _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri(Constants.EMBEDDING_ENDPOINT);
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.LLM_KEY);
+        _dockerHelper = dockerHelper;
+    }
+
+    private async Task TryCreateChatClient()
+    {
+        string model = await _dockerHelper.GetCurrentModelName();
+        if (_client == null)
+        {
+            _client = new ChatClient(
+                options: new OpenAIClientOptions()
+                {
+                    Endpoint = new Uri(Constants.LLM_ENDPOINT)
+                },
+                model: model,
+                credential: new ApiKeyCredential(Constants.LLM_KEY)
+            );
+        }
+    }
+
+    public async Task<string> GetModelName()
+    {
+        return await _dockerHelper.GetCurrentModelName();
     }
 
     public async Task<string> GetChatResult(string question)
     {
+        await TryCreateChatClient();
+
         UserChatMessage userMessage = new UserChatMessage(question);
         SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant.");
         ChatMessage[] messages = { systemMessage, userMessage };
@@ -52,6 +56,8 @@ internal class LlmClient
 
     public async IAsyncEnumerable<string> GetChatResultStreaming(List<Models.ChatMessage> oldMessages, string question, string ragResult)
     {
+        await TryCreateChatClient();
+
         // Determine system prompt based on RAG
         string systemPrompt;
         if (string.IsNullOrEmpty(ragResult))
@@ -95,6 +101,8 @@ internal class LlmClient
 
     public async Task<string> GetChatTitle(string question)
     {
+        await TryCreateChatClient();
+
         UserChatMessage userMessage = new UserChatMessage(question);
         SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant designed to generate concise titles for new chat conversations.  " +
             "Your sole task is to create a title describing the user's input. " +
@@ -107,7 +115,9 @@ internal class LlmClient
     }
 
     public async Task<GoogleSearchKeyword> GetGoogleSearchKeyword(string question)
-    {        
+    {
+        await TryCreateChatClient();
+
         SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant designed to generate google search keywords. " +
             "Your sole task is to create google search keywords from user's input. " +
             "**Do not attempt to answer the user's question or provide any further explanation. " +
@@ -143,7 +153,9 @@ internal class LlmClient
     }
 
     public async Task<string> SummarizeWebpage(string html, string query)
-    {       
+    {
+        await TryCreateChatClient();
+
         SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant designed to summarize web pages. " +
             "Your sole task is to summarize input web page html into text, from the following context and user's query. " +
             "If given input is not able to summarize, returns the input context directly.");
@@ -178,7 +190,7 @@ internal class LlmClient
             return null;
         }
 
-        var payload = new 
+        var payload = new
         {
             model = "Qwen/Qwen3-Embedding-0.6B",
             input = text,
@@ -221,7 +233,7 @@ internal class EmbeddingData
     public float[] embedding { get; set; }
 }
 
-internal class GoogleSearchKeyword
+public class GoogleSearchKeyword
 {
     public string keywords { get; set; }
     public bool isNeedGoogleSearch { get; set; }
