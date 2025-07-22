@@ -127,6 +127,23 @@ public class UsersControllerTests
     }
 
     [Test()]
+    public void Login_TestNotFound()
+    {
+        // Arrange
+        var request = new LoginRequest
+        {
+            UserName = Guid.NewGuid().ToString(),
+            Password = "nothing"
+        };
+
+        // Act
+        var result = _controller.Login(request);
+
+        // Assert
+        Assert.That(result, Is.InstanceOf(typeof(NotFoundResult)));
+    }
+
+    [Test()]
     public async Task GetUserTest()
     {
         // Arrange
@@ -138,6 +155,20 @@ public class UsersControllerTests
         // Assert
         Assert.That(result, Is.InstanceOf(typeof(ActionResult<UserDto>)));
         Assert.That(userId, Is.EqualTo(result.Value?.Id));
+    }
+
+    [Test()]
+    public async Task GetUser_TestNotFound()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();  // Random user id
+
+        // Act
+        ActionResult<UserDto> result = await _controller.GetUser(userId);
+
+        // Assert
+        Assert.That(result, Is.InstanceOf(typeof(ActionResult<UserDto>)));
+        Assert.That(result.Value, Is.EqualTo(null));
     }
 
     [Test]

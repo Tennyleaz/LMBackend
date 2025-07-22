@@ -14,12 +14,10 @@ namespace LMBackend.Controllers;
 [ApiVersion("1.0")]
 public class ModelsController : Controller
 {
-    private readonly ChatContext _context;
     private readonly IDockerHelper _dockerHelper;
 
-    public ModelsController(ChatContext context, IDockerHelper dockerHelper)
+    public ModelsController(IDockerHelper dockerHelper)
     {
-        _context = context;
         _dockerHelper = dockerHelper;
     }
 
