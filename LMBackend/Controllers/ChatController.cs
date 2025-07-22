@@ -79,7 +79,7 @@ public class ChatController : ControllerBase
     /// <returns></returns>
     [HttpGet("{id:guid}/messages")]
     [Authorize]
-    public async Task<ActionResult<List<ChatMessage>>> GetChatMessages(Guid id)
+    public async Task<ActionResult<IEnumerable<ChatMessage>>> GetChatMessages(Guid id)
     {
         Chat chatItem = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
 
@@ -188,7 +188,7 @@ public class ChatController : ControllerBase
         Chat parent = await _context.Chats.Include(c => c.Messages.OrderBy(m => m.Timestamp)).FirstOrDefaultAsync(c => c.Id == id);
         if (parent == null)
         {
-            return NotFound(parent.Id);
+            return NotFound(id);
         }
 
         // Ask LLM for answer
