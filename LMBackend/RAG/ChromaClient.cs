@@ -2104,10 +2104,6 @@ public partial class ChromaClient
                     if (status_ == 200)
                     {
                         var objectResponse_ = await ReadObjectResponseAsync<int>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                        if (objectResponse_.Object == null)
-                        {
-                            throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                        }
                         return objectResponse_.Object;
                     }
                     else
@@ -3068,10 +3064,6 @@ public partial class ChromaClient
                     if (status_ == 200)
                     {
                         var objectResponse_ = await ReadObjectResponseAsync<int>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                        if (objectResponse_.Object == null)
-                        {
-                            throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                        }
                         return objectResponse_.Object;
                     }
                     else
