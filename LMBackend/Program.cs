@@ -17,6 +17,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IDockerHelper, DockerHelper>();
 builder.Services.AddSingleton<ILlmService, LlmClient>();
 builder.Services.AddSingleton<ISerpService, LMBackend.RAG.SerpService>();
+builder.Services.AddHttpClient<ISerpService, LMBackend.RAG.SerpService>(httpClient =>
+{
+    httpClient.BaseAddress = new Uri("https://serpapi.com/search");
+});
 
 // Add services to the container.
 // Fix navigation property cycle in JSON

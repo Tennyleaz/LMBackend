@@ -5,17 +5,15 @@ namespace LMBackend.RAG;
 
 internal class SerpService : ISerpService
 {
-    private HttpClient _httpClient;
-    private const string URL = "https://serpapi.com/search";
+    private readonly HttpClient _httpClient;
+
+    public SerpService(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
 
     public async Task<SerpResultSchema> SearchGoogle(string query)
     {
-        if (_httpClient == null)
-        {
-            _httpClient = new HttpClient();
-            _httpClient.BaseAddress = new Uri(URL);
-        }
-
         string apiKey = Environment.GetEnvironmentVariable("SERP_API_KEY");
         string param = $"?q={WebUtility.UrlEncode(query)}&api_key={apiKey}";
         try
