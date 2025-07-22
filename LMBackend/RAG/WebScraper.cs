@@ -1,4 +1,7 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace LMBackend.RAG;
 
@@ -24,6 +27,9 @@ internal class WebScraper
             HttpResponseMessage response = await _client.PostAsJsonAsync("", payload);
             ScrapResult json = await response.Content.ReadFromJsonAsync<ScrapResult>();
             return json.text;
+            // decode the text
+            //string decodedString = Regex.Unescape(json.text);
+            //return decodedString;
         }
         catch (Exception ex)
         {

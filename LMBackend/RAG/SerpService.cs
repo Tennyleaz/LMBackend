@@ -1,0 +1,66 @@
+﻿using System.Net;
+using System.Text.Json;
+
+namespace LMBackend.RAG;
+
+internal static class SerpService
+{
+    private static HttpClient _httpClient;
+    private const string URL = "https://serpapi.com/search";
+
+    public static async Task<SerpResultSchema> SearchGoogle(string query)
+    {
+        if (_httpClient == null)
+        {
+            _httpClient = new HttpClient();
+            _httpClient.BaseAddress = new Uri(URL);
+        }
+
+        string apiKey = Environment.GetEnvironmentVariable("SERP_API_KEY");
+        string param = $"?q={WebUtility.UrlEncode(query)}&api_key={apiKey}";
+        try
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync(param);
+            string contentJson = await response.Content.ReadAsStringAsync();
+
+            // Find each search result from serp
+            SerpResultSchema result = JsonSerializer.Deserialize<SerpResultSchema>(contentJson);
+            return result;
+
+            //List<string> results = new List<string>();
+            //using JsonDocument doc = JsonDocument.Parse(contentJson);
+            //JsonElement root = doc.RootElement;
+            //foreach (JsonProperty property in root.EnumerateObject())
+            //{
+            //    if (property.Name.EndsWith("_results"))
+            //    {
+            //        string keyPair = $"{property.Name}: {property.Value.ToString()}";
+            //        results.Add(keyPair);
+            //    }
+            //}
+            //return results;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Failed to search using SERP: " + ex);
+            return null;
+        }
+    }
+}
+
+internal class SerpResultSchema
+{
+    //public string search_metadata { get; set; }
+    //public string search_parameters { get; set; }
+    //public string search_information { get; set; }
+    public SerpOrganicResult[] organic_results { get; set; }
+}
+
+internal class SerpOrganicResult
+{
+    public int position { get; set; }
+    public string title { get; set; }
+    public string link { get; set; }
+    public string snippet { get; set; }
+    public string[] snippet_highlighted_words { get; set; }
+}

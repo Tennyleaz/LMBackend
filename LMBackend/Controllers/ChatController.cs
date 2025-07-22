@@ -367,12 +367,27 @@ public class ChatController : ControllerBase
             botReplyBuilder.Append(statusText);
             await WriteJsonStreamProgress(statusText, index, id, botMessage, userMessage.Id, options);
             index++;
-            
+
             // Search for web
             GoogleSearchKeyword gk = await LlmClient.Instance.GetGoogleSearchKeyword(request.Text);
             if (gk.isNeedGoogleSearch)
             {
-                List<GoogleSearchResult> searchResults = await GoogleCustomSearchService.Instance.SearchAsync(gk.keywords, 4);
+                SerpResultSchema searchResult = await SerpService.SearchGoogle(gk.keywords);
+                if (searchResult != null && searchResult.organic_results.Length > 0)
+                {
+                    // Summarize the json to text
+                    foreach (SerpOrganicResult o in searchResult.organic_results)
+                    {
+                        ragResult += "\n" + JsonSerializer.Serialize(o);
+
+                        // Tell client what we have searched
+                        string searchedSite = $" - <a href=\"{o.link}\" target=\"_blank\">{o.title}</a>  \n";
+                        botReplyBuilder.Append(searchedSite);
+                        await WriteJsonStreamProgress(searchedSite, index, id, botMessage, userMessage.Id, options);
+                        index++;
+                    }
+                }
+                /*List<GoogleSearchResult> searchResults = await GoogleCustomSearchService.Instance.SearchAsync(gk.keywords, 5);
                 if (searchResults != null && searchResults.Count > 0)
                 {
                     // Get content from URL
@@ -384,12 +399,13 @@ public class ChatController : ControllerBase
                             Console.WriteLine("HTML is empty for link: " + searchResult.link);
                             continue;
                         }
+                        Console.WriteLine(html);
 
                         // Summarize the html to text
                         string content;
                         try
                         {
-                            content = await LlmClient.Instance.SummarizeWebpage(html);
+                            content = await LlmClient.Instance.SummarizeWebpage(html, request.Text);
                         }
                         catch (Exception ex)
                         {
@@ -412,7 +428,7 @@ public class ChatController : ControllerBase
                     botReplyBuilder.Append("\n");
                     await WriteJsonStreamProgress("\n", index, id, botMessage, userMessage.Id, options);
                     index++;
-                }
+                }*/
                 else
                 {
                     await WriteJsonStreamError(StatusCodes.Status503ServiceUnavailable, "Failed to search Google.", id, options);

@@ -142,11 +142,11 @@ internal class LlmClient
         return JsonSerializer.Deserialize<GoogleSearchKeyword>(result.Value.Content[0].Text);
     }
 
-    public async Task<string> SummarizeWebpage(string html)
-    {
+    public async Task<string> SummarizeWebpage(string html, string query)
+    {       
         SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant designed to summarize web pages. " +
-            "Your sole task is to summarize input web page html into text. " +
-            "If given input is not able to summarize, returns the input directly.");
+            "Your sole task is to summarize input web page html into text, from the following context and user's query. " +
+            "If given input is not able to summarize, returns the input context directly.");
 
         // TODO: make good token count
         if (html.Length > Constants.MAX_TOKEN + 500)
@@ -154,7 +154,8 @@ internal class LlmClient
             html = html.Substring(0, Constants.MAX_TOKEN + 500);
         }
         UserChatMessage userMessage = new UserChatMessage(html);
-        ChatMessage[] messages = { systemMessage, userMessage };
+        UserChatMessage userMessageQuery = new UserChatMessage(query);
+        ChatMessage[] messages = { systemMessage, userMessage, userMessageQuery };
         ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
         return result.Value.Content[0].Text;
     }
