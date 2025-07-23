@@ -1,5 +1,6 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
@@ -14,7 +15,7 @@ namespace LMBackend.Controllers;
 public class WebSocketController : Controller
 {
     private readonly ISttService _sttService;
-    private readonly Queue<SttChunk> wavFileQueue = new Queue<SttChunk>();
+    private readonly ConcurrentQueue<SttChunk> wavFileQueue = new ConcurrentQueue<SttChunk>();
 
     public WebSocketController(ISttService sttService)
     {
@@ -117,6 +118,7 @@ public class WebSocketController : Controller
                                 IsLast = isStopped
                             };
                             wavFileQueue.Enqueue(chunk);
+                            currentFileIndex = fileCounter;  // Advance after enqueueing
                         }
                         catch (Exception ex)
                         {
@@ -207,6 +209,8 @@ public class WebSocketController : Controller
         }
         finally
         {
+            await transcriptionTask;
+            await combineTask;
             transcriptionTask.Dispose();
             combineTask.Dispose();
             wavFileQueue.Clear();
