@@ -17,7 +17,7 @@
         public const string SCRAP_ENDPOINT = LLM_BASE_URL + ":9094/scrape";
         public const string WHISPER_MODEL_PATH = "";  // ggml model path
         public const string WHISPER_BIN_PATH = "";  // whisper.cpp binary
-        public const int WHISPER_CHUNK_SECONDS = 10;
+        public const int WHISPER_CHUNK_SECONDS = 5;
         public const int WHISPER_SAMPLE_RATE = 16000;
     }
 }

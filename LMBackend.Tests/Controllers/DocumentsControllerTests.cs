@@ -27,7 +27,7 @@ public class DocumentsControllerTests
     private DocumentsController _controller;
 
     [SetUp]
-    public async Task Setup()
+    public void Setup()
     {
         // Setup chat context and database
         var options = new DbContextOptionsBuilder<ChatContext>().UseInMemoryDatabase(databaseName: "TestDatabase").Options;

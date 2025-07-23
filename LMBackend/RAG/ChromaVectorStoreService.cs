@@ -9,7 +9,7 @@ public class ChromaVectorStoreService : IVectorStoreService
     private const string TENANT = "tenny";
     private const string DATABASE = "tennydb";
 
-    private ChromaVectorStoreService()
+    public ChromaVectorStoreService()
     {
         _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri(Constants.CHROMA_ENDPOINT);
