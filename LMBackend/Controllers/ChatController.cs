@@ -118,22 +118,7 @@ public class ChatController : ControllerBase
 
         chat.Title = chatDto.Title;
         _context.Entry(chat).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!ChatExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
+        await _context.SaveChangesAsync();
 
         return NoContent();
     }
@@ -503,11 +488,6 @@ public class ChatController : ControllerBase
         await _context.SaveChangesAsync();
 
         return NoContent();
-    }
-
-    private bool ChatExists(Guid id)
-    {
-        return _context.Chats.Any(e => e.Id == id);
     }
 
     private async Task WriteJsonStreamProgress(string part, int index, Guid chatId, ChatMessage botMessage, Guid replyMessagId, JsonSerializerOptions options, string modelName)
