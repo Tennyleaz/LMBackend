@@ -1,4 +1,5 @@
 ﻿using LMBackend.Models;
+using LMBackend.Tests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,7 @@ public class ChatControllerTests
     private Mock<IConfiguration> _mockConfig;
     private Mock<ILlmService> _llmService;
     private Mock<ISerpService> _serpService;
+    private Mock<IVectorStoreService> _vectorService;
     private ChatContext _context;
     private ChatController _controller;
 
@@ -57,8 +59,9 @@ public class ChatControllerTests
 
         _llmService = new Mock<ILlmService>();
         _serpService = new Mock<ISerpService>();
+        _vectorService = new Mock<IVectorStoreService>();
 
-        _controller = new ChatController(_context, _llmService.Object, _serpService.Object);
+        _controller = new ChatController(_context, _llmService.Object, _serpService.Object, _vectorService.Object);
     }
 
     [Test()]
@@ -81,7 +84,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
 
         // Act
         ActionResult<IEnumerable<Chat>> result = await _controller.GetChats();
@@ -97,7 +100,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
 
         // Act
         ActionResult<Chat> result = await _controller.GetChat(Guid.NewGuid());  // random id that does not exist
@@ -113,7 +116,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
         Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
 
         // Act
@@ -239,7 +242,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = Guid.NewGuid(); // Create a new user ID that does not exist
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
         Guid chatId = Guid.NewGuid();
         ChatDto dto = new ChatDto
         {
@@ -262,7 +265,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
         Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
         ChatDto dto = new ChatDto
         {
@@ -285,7 +288,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
         Guid chatId = Guid.NewGuid(); // Create a new chat ID
         ChatDto dto = new ChatDto
         {
@@ -310,7 +313,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
         Guid chatId = Guid.NewGuid();
         ChatMessageDto dto = new ChatMessageDto
         {
@@ -332,7 +335,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
         Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
         ChatMessageDto dto = new ChatMessageDto
         {
@@ -358,7 +361,7 @@ public class ChatControllerTests
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
         Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
         ChatMessageDto dto = new ChatMessageDto
         {
@@ -397,22 +400,6 @@ public class ChatControllerTests
 
         // Assert
         Assert.That(actionResult, Is.InstanceOf<NoContentResult>());
-    }
-
-    private void PrepareMockJwt(Guid userId)
-    {
-        // Prepare middleware
-        var controllerContext = new ControllerContext();
-        var httpContext = new DefaultHttpContext();
-        controllerContext.HttpContext = httpContext;
-
-        // Mock the User object to return a valid userId in JWT subject
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-        {
-            new Claim("sub", userId.ToString())
-        }));
-
-        _controller.ControllerContext = controllerContext;
     }
 
     [TearDown]

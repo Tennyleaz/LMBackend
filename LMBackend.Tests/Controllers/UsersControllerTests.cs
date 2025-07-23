@@ -1,4 +1,5 @@
 ﻿using LMBackend.Models;
+using LMBackend.Tests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -200,7 +201,7 @@ public class UsersControllerTests
         // Arrange
         var user = _context.Users.First(); // Get the existing user's ID
         var userId = user.Id;
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
 
         // Act
         var result = await _controller.GetMe();
@@ -232,7 +233,7 @@ public class UsersControllerTests
     {
         // Arrange
         var userId = _context.Users.First().Id; // Get the existing user's ID
-        PrepareMockJwt(userId);
+        JwtMock.PrepareMockJwt(_controller, userId);
 
         // Act
         var result = await _controller.DeleteUser(userId);
@@ -245,21 +246,5 @@ public class UsersControllerTests
     public void TearDown()
     {
         _context.Dispose();
-    }
-
-    private void PrepareMockJwt(Guid userId)
-    {
-        // Prepare middleware
-        var controllerContext = new ControllerContext();
-        var httpContext = new DefaultHttpContext();
-        controllerContext.HttpContext = httpContext;
-
-        // Mock the User object to return a valid userId in JWT subject
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-        {
-            new Claim("sub", userId.ToString())
-        }));
-
-        _controller.ControllerContext = controllerContext;
     }
 }

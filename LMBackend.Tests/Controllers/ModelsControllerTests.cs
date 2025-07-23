@@ -155,20 +155,4 @@ public class ModelsControllerTests
     {
         _controller.Dispose();
     }
-
-    private void PrepareMockJwt(Guid userId)
-    {
-        // Prepare middleware
-        var controllerContext = new ControllerContext();
-        var httpContext = new DefaultHttpContext();
-        controllerContext.HttpContext = httpContext;
-
-        // Mock the User object to return a valid userId in JWT subject
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-        {
-            new Claim("sub", userId.ToString())
-        }));
-
-        _controller.ControllerContext = controllerContext;
-    }
 }
