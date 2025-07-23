@@ -2,25 +2,12 @@
 
 namespace LMBackend.RAG;
 
-public class ChromaVectorStoreService
+public class ChromaVectorStoreService : IVectorStoreService
 {
     private readonly HttpClient _httpClient;
     private readonly ChromaClient _chromaClient;
     private const string TENANT = "tenny";
     private const string DATABASE = "tennydb";
-
-    private static ChromaVectorStoreService _instance;
-    public static ChromaVectorStoreService Instance
-    {
-        get
-        {
-            if (_instance == null)
-            {
-                _instance = new ChromaVectorStoreService();
-            }
-            return _instance;
-        }
-    }
 
     private ChromaVectorStoreService()
     {

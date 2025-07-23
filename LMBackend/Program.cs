@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IDockerHelper, DockerHelper>();
 builder.Services.AddSingleton<ILlmService, LlmClient>();
 builder.Services.AddSingleton<ISerpService, LMBackend.RAG.SerpService>();
+builder.Services.AddSingleton<IVectorStoreService, LMBackend.RAG.ChromaVectorStoreService>();
 builder.Services.AddHttpClient<ISerpService, LMBackend.RAG.SerpService>(httpClient =>
 {
     httpClient.BaseAddress = new Uri("https://serpapi.com/search");

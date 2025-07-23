@@ -25,13 +25,15 @@ public class ChatController : ControllerBase
     private readonly WebScraper _scraper;
     private readonly ISerpService _serpService;
     private readonly ILlmService _llmClient;
+    private readonly IVectorStoreService _vectorStore;
 
-    public ChatController(ChatContext context, ILlmService llmClient, ISerpService serpService)
+    public ChatController(ChatContext context, ILlmService llmClient, ISerpService serpService, IVectorStoreService vectorStore)
     {
         _context = context;
         _scraper = new WebScraper();
         _serpService = serpService;
         _llmClient = llmClient;
+        _vectorStore = vectorStore;
     }
 
     // GET: api/Chat
@@ -348,9 +350,9 @@ public class ChatController : ControllerBase
 
             // 2. Query ChromaDB with embedding (REST)
             // Get collection id for this user
-            string collectionId = await ChromaVectorStoreService.Instance.TryCreateCollection(userId);
+            string collectionId = await _vectorStore.TryCreateCollection(userId);
             // Search for the text
-            IList<ChromaRagChunkResult> chunkResult = await ChromaVectorStoreService.Instance.SearchAsync(collectionId, parent.Id, embedding, 5, null);
+            IList<ChromaRagChunkResult> chunkResult = await _vectorStore.SearchAsync(collectionId, parent.Id, embedding, 5, null);
             if (chunkResult == null)
             {
                 await WriteJsonStreamError(StatusCodes.Status503ServiceUnavailable, "Failed to search ChromaDB.", id, options, modelName);

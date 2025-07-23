@@ -14,10 +14,13 @@ public class DocumentsController : Controller
 {
     private readonly ChatContext _context;
     private readonly ILlmService _llmClient;
-    public DocumentsController(ChatContext context, ILlmService llmService)
+    private readonly IVectorStoreService _vectorStore;
+
+    public DocumentsController(ChatContext context, ILlmService llmService, IVectorStoreService vectorStore)
     {
         _context = context;
         _llmClient = llmService;
+        _vectorStore = vectorStore;
     }
 
     /// <summary>
@@ -25,7 +28,7 @@ public class DocumentsController : Controller
     /// </summary>
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult<IList<Document>>> GetDocuments()
+    public async Task<ActionResult<IEnumerable<Document>>> GetDocuments()
     {
         Guid userId = User.GetUserId();
         if (userId == Guid.Empty)
@@ -91,9 +94,9 @@ public class DocumentsController : Controller
 
         // Create database and collection if not exist
         //await _chromaService.TryCreateDatabaseForUser();
-        string collectionId = await ChromaVectorStoreService.Instance.TryCreateCollection(userId);
+        string collectionId = await _vectorStore.TryCreateCollection(userId);
         // Save embedding to ChromaDB
-        bool success = await ChromaVectorStoreService.Instance.UpsertAsync(collectionId, chromaChunks);
+        bool success = await _vectorStore.UpsertAsync(collectionId, chromaChunks);
         if (!success)
         {
             return StatusCode(500, "Failed to upsert chromadb");
@@ -124,8 +127,8 @@ public class DocumentsController : Controller
             return NotFound();
         }
 
-        string collectionId = await ChromaVectorStoreService.Instance.TryCreateCollection(userId);
-        bool result = await ChromaVectorStoreService.Instance.DeleteAsync(collectionId, id);
+        string collectionId = await _vectorStore.TryCreateCollection(userId);
+        bool result = await _vectorStore.DeleteAsync(collectionId, id);
 
         _context.Documents.Remove(doc);
         await _context.SaveChangesAsync();
