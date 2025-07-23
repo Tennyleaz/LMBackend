@@ -179,6 +179,10 @@ public class WebSocketController : Controller
                     {
                         isStopped = true;
                     }
+                    else if (command == "pause")
+                    {
+                        isStopped = true;
+                    }
                 }
             }
         }
