@@ -1,8 +1,10 @@
-﻿using System.Diagnostics;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
-using Asp.Versioning;
-using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using Whisper.net;
 
 namespace LMBackend.Controllers;
 
@@ -11,9 +13,12 @@ namespace LMBackend.Controllers;
 [ApiVersion("1.0")]
 public class WebSocketController : Controller
 {
-    public WebSocketController()
-    {
+    private readonly ISttService _sttService;
+    private readonly Queue<SttChunk> wavFileQueue = new Queue<SttChunk>();
 
+    public WebSocketController(ISttService sttService)
+    {
+        _sttService = sttService;
     }
 
     [HttpGet]
@@ -21,7 +26,7 @@ public class WebSocketController : Controller
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            using WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
             await HandleAudioWebSocket(webSocket);
         }
         else
@@ -30,73 +35,209 @@ public class WebSocketController : Controller
         }
     }
 
-    private static async Task HandleAudioWebSocket(WebSocket socket)
+    private async Task HandleAudioWebSocket(WebSocket socket)
     {
-        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        Directory.CreateDirectory(tempDir);
+        string chunkDir = @"D:\test";
+        Directory.CreateDirectory(chunkDir);
 
-        string webmPath = Path.Combine(tempDir, "input.webm");
-        string pcmPath = Path.Combine(tempDir, "chunk.wav");
-
-        await using FileStream webmStream = System.IO.File.Create(webmPath);
-
+        using MemoryStream bufferStream = new MemoryStream();
         byte[] buffer = new byte[8192];
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        long lastChunkMs = 0;
 
+        bool isStopped = false;
         Task transcriptionTask = Task.Run(async () =>
         {
             while (true)
             {
-                await Task.Delay(1000); // Check every second
-
-                var elapsedMs = stopwatch.ElapsedMilliseconds;
-                if (elapsedMs - lastChunkMs >= Constants.WHISPER_CHUNK_SECONDS * 1000)
+                if (wavFileQueue.TryDequeue(out SttChunk chunk))
                 {
-                    lastChunkMs = elapsedMs;
-
-                    // Copy and convert webm so far
-                    System.IO.File.Copy(webmPath, $"{webmPath}.copy", overwrite: true);
-                    ConvertToWav($"{webmPath}.copy", pcmPath);
-
-                    // Transcribe chunk
-                    string transcript = RunWhisperChunk(pcmPath, offsetSeconds: 0);
-                    await SendTranscript(socket, transcript);
+                    Console.WriteLine("Calling whisper... " + chunk.File);
+                    try
+                    {
+                        IAsyncEnumerable<SegmentData> datas = _sttService.WhisperChunk(chunk.File);
+                        await foreach (SegmentData data in datas)
+                        {
+                            double start = chunk.Start + data.Start.TotalSeconds;
+                            double end = chunk.Start + data.End.TotalSeconds;
+                            await SendTranscript(socket, data.Text, start, end, chunk.IsLast);
+                        }
+                        if (chunk.IsLast)
+                        {
+                            Console.WriteLine("Last chunk!");
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
                 }
+                else
+                {
+                    //Console.WriteLine("transcriptionTask nothing to dequeue.");
+                }
+                await Task.Delay(1000); // Check every 1s
+            }
+        });
+
+        int fileCounter = 0;
+        Task combineTask = Task.Run(async () =>
+        {
+            try
+            {
+                while (true)
+                {
+                    if (fileCounter > 0 && fileCounter % 5 == 0)
+                    {
+                        int start = Math.Max(fileCounter - 5, 0);  // actually 6s for 1 chunk!
+                        try
+                        {
+                            //Console.WriteLine("Creating wav file...");
+                            string combinedFile = CombineAudioFiles(chunkDir, start, fileCounter);
+                            Console.WriteLine("Created wav file: " + combinedFile);
+                            SttChunk chunk = new SttChunk
+                            {
+                                File = combinedFile,
+                                Start = start,
+                                End = fileCounter,
+                                IsLast = isStopped
+                            };
+                            wavFileQueue.Enqueue(chunk);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex);
+                        }
+                    }
+                    else if (isStopped)
+                    {
+                        // Last files % 5 < 5
+                        int remain = fileCounter % 5;
+                        if (remain > 0)
+                        {
+                            int start = fileCounter - remain;
+                            string combinedFile = CombineAudioFiles(chunkDir, start, fileCounter);
+                            Console.WriteLine("Created wav file: " + combinedFile);
+                            SttChunk chunk = new SttChunk
+                            {
+                                File = combinedFile,
+                                Start = start,
+                                End = fileCounter,
+                                IsLast = isStopped
+                            };
+                            wavFileQueue.Enqueue(chunk);
+                        }
+                        break;
+                    }
+                    await Task.Delay(1000); // Check every second
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         });
 
         try
-        {
+        {            
             while (socket.State == WebSocketState.Open)
             {
-                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                if (result.MessageType == WebSocketMessageType.Close) break;
+                WebSocketReceiveResult result;
+                do
+                {
+                    result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    await bufferStream.WriteAsync(buffer, 0, result.Count);
+                }
+                while (!result.EndOfMessage);
+
+                // This condition confirms we have received complete blob
                 if (result.MessageType == WebSocketMessageType.Binary)
                 {
-                    await webmStream.WriteAsync(buffer.AsMemory(0, result.Count));
+                    if (bufferStream.Length > 0)
+                    {
+                        string fileName = $"chunk_{fileCounter++}.webm";
+                        fileName = Path.Combine(chunkDir, fileName);
+                        await System.IO.File.WriteAllBytesAsync(fileName, bufferStream.ToArray());
+                        bufferStream.SetLength(0); // Clear for next chunk
+                        //Console.WriteLine($"Write {result.Count} bytes from websocket");
+                        //Console.WriteLine($"Write audio file {fileCounter} from websocket");
+                    }
+
+                    // append audio after every 5s, assume each chunk is 1s long
+
+                }
+                else if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    Console.WriteLine("Websocket get close message.");
+                    break;
+                }
+                else if (result.MessageType == WebSocketMessageType.Text)
+                {
+                    // Check what command was sent
+                    string command = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                    Console.WriteLine("Command: " + command);
+                    if (command == "stop")
+                    {
+                        isStopped = true;
+                    }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Failed to write websocket: " + ex);
         }
         finally
         {
             transcriptionTask.Dispose();
-            Directory.Delete(tempDir, true);
+            combineTask.Dispose();
+            wavFileQueue.Clear();
             if (socket.State == WebSocketState.Open)
+            {
                 await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Done", CancellationToken.None);
+            }
+            Console.WriteLine("Websocket handler leave.");
         }
     }
 
-    private static void ConvertToWav(string input, string output)
+    private static string CombineAudioFiles(string baseDir, int start, int end)
     {
-        string ffmpegCmd = $"ffmpeg -y -i \"{input}\" -ar {Constants.WHISPER_SAMPLE_RATE} -ac 1 -f wav \"{output}\"";
-        RunShell(ffmpegCmd);
-    }
+        Console.WriteLine($"CombineAudioFiles {start} - {end}");
 
-    private static void RunShell(string command)
-    {
-        ProcessStartInfo psi = new ProcessStartInfo("/bin/bash", $"-c \"{command}\"")
+        // Kill any ffmpeg instance if exist
+        Process[] processes = Process.GetProcessesByName("ffmpeg");
+        foreach (Process p in processes)
         {
+            try
+            {
+                p.Kill();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
+        // Create a concat list text file
+        string concatFileName = $"list_{start}-{end}.txt";
+        concatFileName = Path.Combine(baseDir, concatFileName);
+        List<string> files = new List<string>();
+        for (int i=start; i<=end; i++)
+        {
+            string theFile = $"chunk_{i}.webm";
+            theFile = Path.Combine(baseDir, theFile);
+            string line = $"file '{theFile}'";
+            files.Add(line);
+        }
+        System.IO.File.WriteAllLines(concatFileName, files.ToArray());
+
+        // Call ffmpeg
+        // ffmpeg -f concat -safe 0 -i mylist.txt -c copy output.wav
+        string outputName = $"output_{start}-{end}.wav";
+        outputName = Path.Combine(baseDir, outputName);
+        ProcessStartInfo psi = new ProcessStartInfo
+        {
+            FileName = "ffmpeg",
+            Arguments = $"-f concat -safe 0 -i {concatFileName} -ar 16000 -acodec pcm_s16le -ac 1 {outputName}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -109,37 +250,39 @@ public class WebSocketController : Controller
             string error = process.StandardError.ReadToEnd();
             throw new Exception($"Command failed: {error}");
         }
+        return outputName;
     }
 
-    private static string RunWhisperChunk(string wavPath, int offsetSeconds)
-    {
-        string args = $"-m \"{Constants.WHISPER_MODEL_PATH}\" -f \"{wavPath}\" --no-timestamps -otxt --offset_t {offsetSeconds}";
-        ProcessStartInfo psi = new ProcessStartInfo("/bin/bash", $"-c \"cd {Constants.WHISPER_BIN_PATH} && ./main {args}\"")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using Process process = Process.Start(psi);
-        process.WaitForExit();
-
-        string transcriptPath = Path.ChangeExtension(wavPath, ".txt");
-        if (System.IO.File.Exists(transcriptPath))
-        {
-            return System.IO.File.ReadAllText(transcriptPath);
-        }
-
-        return string.Empty;
-    }
-
-    private static async Task SendTranscript(WebSocket socket, string text)
+    private static async Task SendTranscript(WebSocket socket, string text, double start, double end, bool isStopped)
     {
         if (!string.IsNullOrWhiteSpace(text))
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(text);
+            SttResult result = new SttResult
+            {
+                start = start,
+                end = end,
+                text = text,
+                isStopped = isStopped
+            };
+            string json = JsonSerializer.Serialize(result);
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
             await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
         }
+    }
+
+    private struct SttChunk
+    {
+        public string File;
+        public int Start;
+        public int End;
+        public bool IsLast;
+    }
+
+    private class SttResult
+    {
+        public double start { get; set; }
+        public double end { get; set; }
+        public string text { get; set; }
+        public bool isStopped { get; set; }
     }
 }

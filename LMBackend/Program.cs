@@ -16,12 +16,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add my dependencies
 builder.Services.AddSingleton<IDockerHelper, DockerHelper>();
 builder.Services.AddSingleton<ILlmService, LlmClient>();
-builder.Services.AddSingleton<ISerpService, LMBackend.RAG.SerpService>();
 builder.Services.AddSingleton<IVectorStoreService, LMBackend.RAG.ChromaVectorStoreService>();
+builder.Services.AddSingleton<ISerpService, LMBackend.RAG.SerpService>();
 builder.Services.AddHttpClient<ISerpService, LMBackend.RAG.SerpService>(httpClient =>
 {
     httpClient.BaseAddress = new Uri("https://serpapi.com/search");
 });
+builder.Services.AddSingleton<ISttService, WhisperService>();
+builder.Services.AddHostedService<SttServiceInitializer>();
 
 // Add services to the container.
 // Fix navigation property cycle in JSON
@@ -146,7 +148,8 @@ app.MapControllers();
 // Add websocket support for audio streaming
 var webSocketOptions = new WebSocketOptions
 {
-    KeepAliveInterval = TimeSpan.FromMinutes(1)
+    KeepAliveInterval = TimeSpan.FromMinutes(1),
+    ReceiveBufferSize = 8192
 };
 app.UseWebSockets(webSocketOptions);
 
