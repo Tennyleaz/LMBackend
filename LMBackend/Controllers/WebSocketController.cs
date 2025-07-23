@@ -44,6 +44,7 @@ public class WebSocketController : Controller
         byte[] buffer = new byte[8192];
 
         bool isStopped = false;
+        bool isPaused = false;
         Task transcriptionTask = Task.Run(async () =>
         {
             while (true)
@@ -80,15 +81,29 @@ public class WebSocketController : Controller
         });
 
         int fileCounter = 0;
+        int currentFileIndex = 0;
         Task combineTask = Task.Run(async () =>
         {
             try
             {
                 while (true)
                 {
-                    if (fileCounter > 0 && fileCounter % 5 == 0)
+                    // Only combine if current index > counter + 10, or is paused/stopped
+                    if (fileCounter - currentFileIndex > 10 || isPaused || isStopped)
                     {
-                        int start = Math.Max(fileCounter - 5, 0);  // actually 6s for 1 chunk!
+                        // Take the 1 file before current, to overlap
+                        int start = Math.Max(currentFileIndex - 1, 0);
+                        if (start >= fileCounter)
+                        {
+                            // No file to combine
+                            if (isStopped)
+                            {
+                                // Leave if stopped
+                                break;
+                            }
+                            await Task.Delay(1000);  // Wait for more files
+                            continue;
+                        }
                         try
                         {
                             //Console.WriteLine("Creating wav file...");
@@ -108,26 +123,26 @@ public class WebSocketController : Controller
                             Console.WriteLine(ex);
                         }
                     }
-                    else if (isStopped)
-                    {
-                        // Last files % 5 < 5
-                        int remain = fileCounter % 5;
-                        if (remain > 0)
-                        {
-                            int start = fileCounter - remain;
-                            string combinedFile = CombineAudioFiles(chunkDir, start, fileCounter);
-                            Console.WriteLine("Created wav file: " + combinedFile);
-                            SttChunk chunk = new SttChunk
-                            {
-                                File = combinedFile,
-                                Start = start,
-                                End = fileCounter,
-                                IsLast = isStopped
-                            };
-                            wavFileQueue.Enqueue(chunk);
-                        }
-                        break;
-                    }
+                    //else if (isStopped)
+                    //{
+                    //    // Last files % 5 < 5
+                    //    int remain = fileCounter % 5;
+                    //    if (remain > 0)
+                    //    {
+                    //        int start = fileCounter - remain;
+                    //        string combinedFile = CombineAudioFiles(chunkDir, start, fileCounter);
+                    //        Console.WriteLine("Created wav file: " + combinedFile);
+                    //        SttChunk chunk = new SttChunk
+                    //        {
+                    //            File = combinedFile,
+                    //            Start = start,
+                    //            End = fileCounter,
+                    //            IsLast = isStopped
+                    //        };
+                    //        wavFileQueue.Enqueue(chunk);
+                    //    }
+                    //    break;
+                    //}
                     await Task.Delay(1000); // Check every second
                 }
             }
@@ -177,11 +192,11 @@ public class WebSocketController : Controller
                     Console.WriteLine("Command: " + command);
                     if (command == "stop")
                     {
-                        isStopped = true;
+                        isPaused = isStopped = true;
                     }
                     else if (command == "pause")
                     {
-                        isStopped = true;
+                        isPaused = true;
                     }
                 }
             }
