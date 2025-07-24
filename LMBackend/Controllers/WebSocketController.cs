@@ -15,9 +15,10 @@ namespace LMBackend.Controllers;
 public class WebSocketController : Controller
 {
     private readonly ISttService _sttService;
+    private readonly ConcurrentQueue<SttChunk> rawQueue = new ConcurrentQueue<SttChunk>();
     private readonly ConcurrentQueue<SttChunk> wavFileQueue = new ConcurrentQueue<SttChunk>();
     private const int SLICE_SEC = 1;
-    private const string INPUT_TYPE = "webm";
+    private const string INPUT_TYPE = "ogg";
     private const int MAX_COMBINE = 5;
 
     public WebSocketController(ISttService sttService)
@@ -101,10 +102,10 @@ public class WebSocketController : Controller
                 while (true)
                 {
                     // Only combine if current index > counter + 10, or is paused/stopped
-                    if (fileCounter - currentFileIndex > MAX_COMBINE || isPaused || isStopped)
+                    if (rawQueue.Count > 0|| isStopped)
                     {
                         // Check if no files
-                        if (fileCounter == currentFileIndex)
+                        /*if (fileCounter == currentFileIndex)
                         {
                             if (isStopped)
                                 break;
@@ -112,7 +113,7 @@ public class WebSocketController : Controller
                                 continue;
                         }
                         // Take the 1 file before current, to overlap
-                        int start = Math.Max(currentFileIndex - 1, 1);  // Started at 1
+                        int start = Math.Max(currentFileIndex, 1);  // Started at 1
                         if (start >= fileCounter)
                         {
                             // No file to combine
@@ -123,20 +124,29 @@ public class WebSocketController : Controller
                             }
                             await Task.Delay(1000);  // Wait for more files
                             continue;
-                        }
+                        }*/
                         try
                         {
                             //Console.WriteLine("Creating wav file...");
-                            string combinedFile = CombineAudioFiles(chunkDir, start, fileCounter);
-                            Console.WriteLine("Created wav file: " + combinedFile);
-                            SttChunk chunk = new SttChunk
+                            if (rawQueue.TryDequeue(out var result))
                             {
-                                File = combinedFile,
-                                Start = start,
-                                End = fileCounter,
-                                IsLast = isStopped
-                            };
-                            wavFileQueue.Enqueue(chunk);                            
+                                Console.WriteLine("Createing wav file from: " + result.File);
+                                //string combinedFile = CombineAudioFiles(chunkDir, result.Start, result.Start);
+                                string combinedFile = ConvertToWav(chunkDir, result.Start, result.File);
+                                Console.WriteLine("Created wav file: " + combinedFile);
+                                SttChunk chunk = new SttChunk
+                                {
+                                    File = combinedFile,
+                                    Start = result.Start,
+                                    End = fileCounter,
+                                    IsLast = isStopped
+                                };
+                                wavFileQueue.Enqueue(chunk);
+                            }
+                            else if (isStopped)
+                            {
+                                break;
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -178,6 +188,13 @@ public class WebSocketController : Controller
                         await System.IO.File.WriteAllBytesAsync(fileName, bufferStream.ToArray());
                         bufferStream.SetLength(0);  // Clear for next chunk                                                   
                         //Console.WriteLine($"Write audio file {fileCounter} from websocket");
+                        rawQueue.Enqueue(new SttChunk
+                        {
+                            Start = fileCounter,
+                            End = 0,
+                            File = fileName,
+                            IsLast = isStopped
+                        });
                     }
                 }
                 else if (result.MessageType == WebSocketMessageType.Close)
@@ -220,7 +237,8 @@ public class WebSocketController : Controller
                 await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Done", CancellationToken.None);
             }
             Console.WriteLine("Websocket handler leave... 3");
-            ClearDir(chunkDir);
+            KillFfmpeg();
+            //ClearDir(chunkDir);
             Console.WriteLine("Websocket handler leave... done.");
         }
     }
@@ -230,18 +248,7 @@ public class WebSocketController : Controller
         Console.WriteLine($"CombineAudioFiles {start} - {end}");
 
         // Kill any ffmpeg instance if exist
-        Process[] processes = Process.GetProcessesByName("ffmpeg");
-        foreach (Process p in processes)
-        {
-            try
-            {
-                p.Kill();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-        }
+        KillFfmpeg();
 
         // Create a concat list text file
         string concatFileName = $"list_{start}-{end}.txt";
@@ -276,6 +283,7 @@ public class WebSocketController : Controller
             CreateNoWindow = true
         };
         using Process process = Process.Start(psi);
+        process.OutputDataReceived += Process_OutputDataReceived;
         process.WaitForExit();
         if (process.ExitCode != 0)
         {
@@ -286,15 +294,57 @@ public class WebSocketController : Controller
         return outputName;
     }
 
+    private static string ConvertToWav(string baseDir, int index, string input)
+    {
+        // Kill any ffmpeg instance if exist
+        KillFfmpeg();
+
+        if (!System.IO.File.Exists(input))
+        {
+            Console.WriteLine("File not exist! " + input);
+            return null;
+        }
+
+        // Call ffmpeg
+        // ffmpeg -i chunk_1.webm -ar 16000 -ac 1 -acodec pcm_s16le chunk_1.wav
+        string outputName = $"output_{index}.wav";
+        outputName = Path.Combine(baseDir, outputName);
+        string arguments = $" -i \"{input}\" -ar 16000 -acodec pcm_s16le -ac 1 \"{outputName}\"";
+        ProcessStartInfo psi = new ProcessStartInfo
+        {
+            FileName = "ffmpeg",
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using Process process = Process.Start(psi);
+        process.OutputDataReceived += Process_OutputDataReceived;
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+        {
+            Console.WriteLine("Error args: " + arguments);
+            string error = process.StandardError.ReadToEnd();
+            throw new Exception($"Command failed: {error}");
+        }
+        return outputName;
+    }
+
+    private static void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+    {
+        Console.WriteLine(e.ToString());
+    }
+
     private static async Task SendTranscript(WebSocket socket, string text, double start, double end, bool isStopped)
     {
-        if (!string.IsNullOrWhiteSpace(text))
+        //if (!string.IsNullOrWhiteSpace(text))
         {
             SttResult result = new SttResult
             {
                 start = start,
                 end = end,
-                text = text,
+                text = text,  // Could be null
                 isStopped = isStopped
             };
             string json = JsonSerializer.Serialize(result);
@@ -332,6 +382,22 @@ public class WebSocketController : Controller
                 System.IO.File.Delete(file);
             }
             catch { }
+        }
+    }
+
+    private static void KillFfmpeg()
+    {
+        Process[] processes = Process.GetProcessesByName("ffmpeg");
+        foreach (Process p in processes)
+        {
+            try
+            {
+                p.Kill();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
     }
 }
