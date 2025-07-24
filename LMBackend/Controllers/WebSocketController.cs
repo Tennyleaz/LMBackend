@@ -1,4 +1,5 @@
 ﻿using Asp.Versioning;
+using LMBackend.STT;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -359,15 +360,7 @@ public class WebSocketController : Controller
         public int Start;
         public int End;
         public bool IsLast;
-    }
-
-    private class SttResult
-    {
-        public double start { get; set; }
-        public double end { get; set; }
-        public string text { get; set; }
-        public bool isStopped { get; set; }
-    }
+    }    
 
     private static void ClearDir(string dir)
     {
