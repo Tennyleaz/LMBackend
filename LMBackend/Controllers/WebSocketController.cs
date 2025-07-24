@@ -44,6 +44,7 @@ public class WebSocketController : Controller
     {
         string chunkDir = @"C:\temp audio";
         Directory.CreateDirectory(chunkDir);
+        KillFfmpeg();
 
         using MemoryStream bufferStream = new MemoryStream();
         byte[] buffer = new byte[8192];
@@ -132,7 +133,7 @@ public class WebSocketController : Controller
                             {
                                 Console.WriteLine("Createing wav file from: " + result.File);
                                 //string combinedFile = CombineAudioFiles(chunkDir, result.Start, result.Start);
-                                string combinedFile = ConvertToWav(chunkDir, result.Start, result.File);
+                                string combinedFile = ConvertToWav(result.File);
                                 Console.WriteLine("Created wav file: " + combinedFile);
                                 SttChunk chunk = new SttChunk
                                 {
@@ -183,7 +184,7 @@ public class WebSocketController : Controller
                     if (bufferStream.Length > 0)
                     {
                         fileCounter++;  // File count starts at 1
-                        string fileName = $"chunk_{fileCounter}.{INPUT_TYPE}";
+                        string fileName = $"chunk_{Guid.NewGuid()}.{INPUT_TYPE}";
                         fileName = Path.Combine(chunkDir, fileName);
                         await System.IO.File.WriteAllBytesAsync(fileName, bufferStream.ToArray());
                         bufferStream.SetLength(0);  // Clear for next chunk                                                   
@@ -238,7 +239,7 @@ public class WebSocketController : Controller
             }
             Console.WriteLine("Websocket handler leave... 3");
             KillFfmpeg();
-            //ClearDir(chunkDir);
+            ClearDir(chunkDir);
             Console.WriteLine("Websocket handler leave... done.");
         }
     }
@@ -294,7 +295,7 @@ public class WebSocketController : Controller
         return outputName;
     }
 
-    private static string ConvertToWav(string baseDir, int index, string input)
+    private static string ConvertToWav(string input)
     {
         // Kill any ffmpeg instance if exist
         KillFfmpeg();
@@ -307,8 +308,7 @@ public class WebSocketController : Controller
 
         // Call ffmpeg
         // ffmpeg -i chunk_1.webm -ar 16000 -ac 1 -acodec pcm_s16le chunk_1.wav
-        string outputName = $"output_{index}.wav";
-        outputName = Path.Combine(baseDir, outputName);
+        string outputName = Path.ChangeExtension(input, ".wav");
         string arguments = $" -i \"{input}\" -ar 16000 -acodec pcm_s16le -ac 1 \"{outputName}\"";
         ProcessStartInfo psi = new ProcessStartInfo
         {
