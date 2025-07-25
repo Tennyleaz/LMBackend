@@ -1,5 +1,6 @@
 using LMBackend;
 using LMBackend.Models;
+using LMBackend.STT;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -22,8 +23,14 @@ builder.Services.AddHttpClient<ISerpService, LMBackend.RAG.SerpService>(httpClie
 {
     httpClient.BaseAddress = new Uri("https://serpapi.com/search");
 });
+// DI for STT
 builder.Services.AddSingleton<ISttService, WhisperService>();
-builder.Services.AddHostedService<SttServiceInitializer>();
+builder.Services.AddHostedService<SttServiceInitializer>();  // To initialze whisper at startup
+builder.Services.AddSingleton<IWebSocketManager, LMBackend.STT.WebSocketManager>();
+builder.Services.AddSingleton<IAudioQueue, AudioQueue>();
+builder.Services.AddSingleton<IAudioConverter, FfmpegAudioConverter>();
+builder.Services.AddHostedService<AudioConverterService>();
+builder.Services.AddHostedService<SttProcessingService>();
 
 // Add services to the container.
 // Fix navigation property cycle in JSON

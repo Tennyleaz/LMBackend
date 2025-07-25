@@ -16,7 +16,16 @@ public class AudioConverterService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             RawAudioChunk rawAudioChunk = _audioQueue.DequeueRawData();
-            string wavFileName = _audioConverter.ConverToWav(rawAudioChunk.File); // Implement actual conversion logic
+            if (rawAudioChunk == null)
+            {
+                // Sleep 1s and wait for next item
+                await Task.Delay(1000, stoppingToken);
+                continue;
+            }
+
+            Console.WriteLine("Createing wav file from: " + rawAudioChunk.File);
+            string wavFileName = _audioConverter.ConvertToWav(rawAudioChunk.File); // Implement actual conversion logic
+            Console.WriteLine("Createing wav file from: " + rawAudioChunk.File + " done.");
             WavAudioChunk wavAudioChunk = new WavAudioChunk
             {
                 Id = rawAudioChunk.Id,

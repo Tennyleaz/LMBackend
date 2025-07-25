@@ -24,8 +24,15 @@ public class SttProcessingService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             WavAudioChunk chunk = _audioQueue.DequeueWavData();
+            if (chunk == null)
+            {
+                // Sleep 1s and wait for next item
+                await Task.Delay(1000, stoppingToken);
+                continue;
+            }
 
             // Process audio with STT
+            Console.WriteLine("Calling whisper... " + chunk.File);
             IAsyncEnumerable<SegmentData> datas = _sttService.WhisperChunk(chunk.File);
             await foreach (SegmentData data in datas)
             {
@@ -41,6 +48,13 @@ public class SttProcessingService : BackgroundService
                 };
                 await _webSocketManager.SendMessageAsync(chunk.SocketId, sttResult);
             }
+
+            // Delete completed files
+            try
+            {
+                File.Delete(chunk.File);
+            }
+            catch { }
         }
     }
 }
