@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using LMBackend.RAG;
 using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
@@ -13,13 +13,16 @@ internal class LlmClient : ILlmService
     private ChatClient _client;
     private readonly HttpClient _httpClient;
     private readonly IDockerHelper _dockerHelper;
+    private readonly ISerpService _serpService;
+    private ChatTool serpSearchTool;
 
-    public LlmClient(IDockerHelper dockerHelper)
+    public LlmClient(IDockerHelper dockerHelper, ISerpService serpService)
     {
         _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri(Constants.EMBEDDING_ENDPOINT);
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.LLM_KEY);
         _dockerHelper = dockerHelper;
+        _serpService = serpService;
     }
 
     private async Task TryCreateChatClient()
@@ -36,6 +39,21 @@ internal class LlmClient : ILlmService
                 credential: new ApiKeyCredential(Constants.LLM_KEY)
             );
         }
+
+        serpSearchTool = ChatTool.CreateFunctionTool("serp_search_tool", "Searc Google using serp API.",
+            BinaryData.FromString(
+            @"
+            {
+              ""type"": ""object"",
+              ""properties"": {
+                ""keywords"": {
+                  ""type"": ""string"",
+                  ""description"": ""The keywords to search Google.""
+                }
+              },
+              ""required"": [""keywords""]
+            }
+            "), true);
     }
 
     public async Task<string> GetModelName()
@@ -88,13 +106,86 @@ internal class LlmClient : ILlmService
         }
         // Add the new question
         messages.Add(new UserChatMessage(question));
+        // Add tool call
+        ChatCompletionOptions options = new ChatCompletionOptions
+        {
+            AllowParallelToolCalls = false,
+            ToolChoice = ChatToolChoice.CreateAutoChoice(),
+            Tools = { serpSearchTool }
+        };
         // Call LLM API
-        AsyncCollectionResult<StreamingChatCompletionUpdate> updates = _client.CompleteChatStreamingAsync(messages);
+        AsyncCollectionResult<StreamingChatCompletionUpdate> updates = _client.CompleteChatStreamingAsync(messages, options);
         await foreach (StreamingChatCompletionUpdate completionUpdate in updates)
         {
-            foreach (ChatMessageContentPart contentPart in completionUpdate.ContentUpdate)
+            if (completionUpdate.FinishReason == ChatFinishReason.ToolCalls)
             {
-                yield return contentPart.Text;
+                // Get tool call params and call the tool
+                foreach (StreamingChatToolCallUpdate toolCall in completionUpdate.ToolCallUpdates)
+                {
+                    Console.WriteLine("toolCall: " + toolCall.FunctionName);
+                    if (toolCall.FunctionName == "serp_search_tool")
+                    {
+                        // If arguments are streamed, collect them
+                        string jsonParam = toolCall.FunctionArgumentsUpdate?.ToString() ?? "";
+                        SerpParam searchParam = JsonSerializer.Deserialize<SerpParam>(jsonParam);
+                        SerpResultSchema searchResult = await _serpService.SearchGoogle(searchParam.keywords);
+                        string toolResult = "";
+                        if (searchResult != null && searchResult.organic_results.Length > 0)
+                        {
+                            // Summarize the json to text
+                            foreach (SerpOrganicResult o in searchResult.organic_results)
+                            {
+                                toolResult += "\n" + JsonSerializer.Serialize(o);
+                            }
+                            // Add new tool result back to messages
+                            messages.Add(new ToolChatMessage("serp_search_tool", toolResult));
+                        }
+                        // Add result as a tool message
+                        messages.Add(new ToolChatMessage(toolCall.ToolCallId, toolResult));
+                        // Call LLM again
+                        updates = _client.CompleteChatStreamingAsync(messages, options);
+
+                        // After all tool calls, let the model continue
+                        var toolUpdates = _client.CompleteChatStreamingAsync(messages, options);
+                        await foreach (StreamingChatCompletionUpdate toolCompletion in toolUpdates)
+                        {
+                            foreach (ChatMessageContentPart contentPart in toolCompletion.ContentUpdate)
+                            {
+                                yield return contentPart.Text;
+                            }
+                        }
+                    }
+                }
+                /*if (completionUpdate.ToolCallUpdates[0].FunctionName == "my_weather_search_tool")
+                {
+                    string jsonParam = string.Empty;
+                    foreach (StreamingChatToolCallUpdate toolPart in completionUpdate.ToolCallUpdates)
+                    {
+                        jsonParam += toolPart.FunctionArgumentsUpdate.ToString();
+                    }
+                    SerpParam searchParam = JsonSerializer.Deserialize<SerpParam>(jsonParam);
+                    SerpResultSchema searchResult = await _serpService.SearchGoogle(searchParam.keywords);
+                    if (searchResult != null && searchResult.organic_results.Length > 0)
+                    {
+                        // Summarize the json to text
+                        string toolResult = "";
+                        foreach (SerpOrganicResult o in searchResult.organic_results)
+                        {
+                            toolResult += "\n" + JsonSerializer.Serialize(o);
+                        }
+                        // Add new tool result back to messages
+                        messages.Add(new ToolChatMessage("my_weather_search_tool", toolResult));
+                        // Call LLM again
+                        updates = _client.CompleteChatStreamingAsync(messages);
+                    }
+                }*/
+            }
+            else
+            {
+                foreach (ChatMessageContentPart contentPart in completionUpdate.ContentUpdate)
+                {
+                    yield return contentPart.Text;
+                }
             }
         }
     }
@@ -214,6 +305,11 @@ internal class LlmClient : ILlmService
             Console.WriteLine("Error embed text: " + ex);
             return null;
         }
+    }
+
+    private class SerpParam
+    {
+        public string keywords;
     }
 }
 
