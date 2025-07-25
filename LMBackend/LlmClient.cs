@@ -17,7 +17,9 @@ internal class LlmClient : ILlmService
     private readonly HttpClient _httpClient;
     private readonly IDockerHelper _dockerHelper;
     private readonly ISerpService _serpService;
-    private ChatTool serpSearchTool;
+    private ChatTool serpSearchTool, webScrapeTool;
+    private const string SERP_TOOL_NAME = "serp_search_tool";
+    private const string SCRAPE_TOOL_NAME = "web_scrape_tool";
 
     public LlmClient(IDockerHelper dockerHelper, ISerpService serpService)
     {
@@ -43,20 +45,43 @@ internal class LlmClient : ILlmService
             );
         }
 
-        serpSearchTool = ChatTool.CreateFunctionTool("serp_search_tool", "Searc Google using serp API.",
-            BinaryData.FromString(
-            @"
-            {
-              ""type"": ""object"",
-              ""properties"": {
-                ""keywords"": {
-                  ""type"": ""string"",
-                  ""description"": ""The keywords to search Google.""
+        if (serpSearchTool == null)
+        {
+            serpSearchTool = ChatTool.CreateFunctionTool(SERP_TOOL_NAME, "Search Google using serp API.",
+                BinaryData.FromString(
+                @"
+                {
+                  ""type"": ""object"",
+                  ""properties"": {
+                    ""keywords"": {
+                      ""type"": ""string"",
+                      ""description"": ""The keywords to search Google.""
+                    }
+                  },
+                  ""required"": [""keywords""]
                 }
-              },
-              ""required"": [""keywords""]
-            }
-            "), true);
+                "), 
+                true);
+        }
+
+        if (webScrapeTool == null)
+        {
+            webScrapeTool = ChatTool.CreateFunctionTool(SCRAPE_TOOL_NAME, "Scrape a URL and get it's result.",
+                BinaryData.FromString(
+                @"
+                {
+                  ""type"": ""object"",
+                  ""properties"": {
+                    ""url"": {
+                      ""type"": ""string"",
+                      ""description"": ""The URL to scrape.""
+                    }
+                  },
+                  ""required"": [""url""]
+                }
+                "), 
+                true);
+        }
     }
 
     public async Task<string> GetModelName()
@@ -80,24 +105,15 @@ internal class LlmClient : ILlmService
         ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages, options);
         if (result.Value.ToolCalls?.Count > 0)
         {
-            if (result.Value.ToolCalls[0].FunctionName == "serp_search_tool")
+            if (result.Value.ToolCalls[0].FunctionName == SERP_TOOL_NAME)
             {
                 string jsonParam = result.Value.ToolCalls[0].FunctionArguments?.ToString() ?? "";
                 SerpParam searchParam = JsonSerializer.Deserialize<SerpParam>(jsonParam);
-                SerpResultSchema searchResult = await _serpService.SearchGoogle(searchParam.keywords);
-                string toolResult = "";
-                if (searchResult != null && searchResult.organic_results.Length > 0)
-                {
-                    // Summarize the json to text
-                    foreach (SerpOrganicResult o in searchResult.organic_results)
-                    {
-                        toolResult += "\n" + JsonSerializer.Serialize(o);
-                    }
-                    // Add new tool result back to messages
-                    messages.Add(new ToolChatMessage(result.Value.ToolCalls[0].Id, toolResult));
-                    result = await _client.CompleteChatAsync(messages, options);
-                    return RemoveThink(result.Value.Content[0].Text);
-                }
+                string toolResult = await _serpService.SearchGoogleWithString(searchParam.keywords);
+                // Add new tool result back to messages
+                messages.Add(new ToolChatMessage(result.Value.ToolCalls[0].Id, toolResult));
+                result = await _client.CompleteChatAsync(messages, options);
+                return RemoveThink(result.Value.Content[0].Text);
             }
         }
         return RemoveThink(result.Value.Content[0].Text);
@@ -190,7 +206,7 @@ internal class LlmClient : ILlmService
                         // Then, add a new tool message for each tool call to be resolved.
                         foreach (ChatToolCall toolCall in toolCalls)
                         {
-                            if (toolCall.FunctionName == "serp_search_tool")
+                            if (toolCall.FunctionName == SERP_TOOL_NAME)
                             {
                                 string jsonParam = toolCall.FunctionArguments.ToString();
                                 SerpParam searchParam = JsonSerializer.Deserialize<SerpParam>(jsonParam);
