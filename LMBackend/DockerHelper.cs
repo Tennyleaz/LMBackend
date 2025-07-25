@@ -167,6 +167,11 @@ internal class DockerHelper : IDockerHelper
         {
             param.Cmd.Add("--max-model-len");
             param.Cmd.Add("5000");
+            param.Cmd.Add("--enable-auto-tool-choice");
+            param.Cmd.Add("--tool-call-parser");
+            param.Cmd.Add("llama3_json");
+            param.Cmd.Add("--chat-template");
+            param.Cmd.Add("examples/tool_chat_template_llama3.1_json.jinja");
         }
         else if (modelName == "Qwen/Qwen3-4B")
         {
