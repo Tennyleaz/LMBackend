@@ -44,6 +44,21 @@ internal class SerpService : ISerpService
             return null;
         }
     }
+
+    public async Task<string> SearchGoogleWithString(string query)
+    {
+        SerpResultSchema searchResult = await SearchGoogle(query);
+        string toolResult = "";
+        if (searchResult != null && searchResult.organic_results.Length > 0)
+        {
+            // Summarize the json to text
+            foreach (SerpOrganicResult o in searchResult.organic_results)
+            {
+                toolResult += "\n" + JsonSerializer.Serialize(o);
+            }
+        }
+        return toolResult;
+    }
 }
 
 public class SerpResultSchema

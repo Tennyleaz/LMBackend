@@ -1,9 +1,12 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using LMBackend.RAG;
 using OpenAI;
 using OpenAI.Chat;
+using System.Buffers;
 using System.ClientModel;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 
 namespace LMBackend;
@@ -13,13 +16,16 @@ internal class LlmClient : ILlmService
     private ChatClient _client;
     private readonly HttpClient _httpClient;
     private readonly IDockerHelper _dockerHelper;
+    private readonly ISerpService _serpService;
+    private ChatTool serpSearchTool;
 
-    public LlmClient(IDockerHelper dockerHelper)
+    public LlmClient(IDockerHelper dockerHelper, ISerpService serpService)
     {
         _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri(Constants.EMBEDDING_ENDPOINT);
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.LLM_KEY);
         _dockerHelper = dockerHelper;
+        _serpService = serpService;
     }
 
     private async Task TryCreateChatClient()
@@ -36,6 +42,21 @@ internal class LlmClient : ILlmService
                 credential: new ApiKeyCredential(Constants.LLM_KEY)
             );
         }
+
+        serpSearchTool = ChatTool.CreateFunctionTool("serp_search_tool", "Searc Google using serp API.",
+            BinaryData.FromString(
+            @"
+            {
+              ""type"": ""object"",
+              ""properties"": {
+                ""keywords"": {
+                  ""type"": ""string"",
+                  ""description"": ""The keywords to search Google.""
+                }
+              },
+              ""required"": [""keywords""]
+            }
+            "), true);
     }
 
     public async Task<string> GetModelName()
@@ -49,8 +70,36 @@ internal class LlmClient : ILlmService
 
         UserChatMessage userMessage = new UserChatMessage(question);
         SystemChatMessage systemMessage = new SystemChatMessage("You are a helpful assistant.");
-        ChatMessage[] messages = { systemMessage, userMessage };
-        ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages);
+        List<ChatMessage> messages = new List<ChatMessage> { systemMessage, userMessage };
+        ChatCompletionOptions options = new ChatCompletionOptions
+        {
+            AllowParallelToolCalls = false,
+            ToolChoice = ChatToolChoice.CreateAutoChoice(),
+            Tools = { serpSearchTool }
+        };
+        ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages, options);
+        if (result.Value.ToolCalls?.Count > 0)
+        {
+            if (result.Value.ToolCalls[0].FunctionName == "serp_search_tool")
+            {
+                string jsonParam = result.Value.ToolCalls[0].FunctionArguments?.ToString() ?? "";
+                SerpParam searchParam = JsonSerializer.Deserialize<SerpParam>(jsonParam);
+                SerpResultSchema searchResult = await _serpService.SearchGoogle(searchParam.keywords);
+                string toolResult = "";
+                if (searchResult != null && searchResult.organic_results.Length > 0)
+                {
+                    // Summarize the json to text
+                    foreach (SerpOrganicResult o in searchResult.organic_results)
+                    {
+                        toolResult += "\n" + JsonSerializer.Serialize(o);
+                    }
+                    // Add new tool result back to messages
+                    messages.Add(new ToolChatMessage(result.Value.ToolCalls[0].Id, toolResult));
+                    result = await _client.CompleteChatAsync(messages, options);
+                    return RemoveThink(result.Value.Content[0].Text);
+                }
+            }
+        }
         return RemoveThink(result.Value.Content[0].Text);
     }
 
@@ -88,15 +137,76 @@ internal class LlmClient : ILlmService
         }
         // Add the new question
         messages.Add(new UserChatMessage(question));
-        // Call LLM API
-        AsyncCollectionResult<StreamingChatCompletionUpdate> updates = _client.CompleteChatStreamingAsync(messages);
-        await foreach (StreamingChatCompletionUpdate completionUpdate in updates)
+        // Add tool call
+        ChatCompletionOptions options = new ChatCompletionOptions
         {
-            foreach (ChatMessageContentPart contentPart in completionUpdate.ContentUpdate)
+            AllowParallelToolCalls = false,
+            ToolChoice = ChatToolChoice.CreateAutoChoice(),
+            Tools = { serpSearchTool }
+        };
+        // Call LLM API
+        bool requiresAction;
+        do
+        {
+            requiresAction = false;            
+            StringBuilder contentBuilder = new();
+            StreamingChatToolCallsBuilder toolCallsBuilder = new();
+            
+            AsyncCollectionResult<StreamingChatCompletionUpdate> updates = _client.CompleteChatStreamingAsync(messages, options);
+            await foreach (StreamingChatCompletionUpdate completionUpdate in updates)
             {
-                yield return contentPart.Text;
+                foreach (ChatMessageContentPart contentPart in completionUpdate.ContentUpdate)
+                {
+                    //contentBuilder.Append(contentPart.Text);
+                    yield return contentPart.Text;
+                }
+
+                // Build the tool calls as new updates arrive.
+                foreach (StreamingChatToolCallUpdate toolCallUpdate in completionUpdate.ToolCallUpdates)
+                {
+                    toolCallsBuilder.Append(toolCallUpdate);
+                }
+
+                // See:
+                // https://github.com/openai/openai-dotnet/blob/main/examples/Chat/Example04_FunctionCallingStreamingAsync.cs
+                switch (completionUpdate.FinishReason)
+                {
+                    case ChatFinishReason.Stop:
+                        //yield return contentBuilder.ToString();
+                        break;
+                    case ChatFinishReason.ToolCalls:
+                        // First, collect the accumulated function arguments into complete tool calls to be processed
+                        IReadOnlyList<ChatToolCall> toolCalls = toolCallsBuilder.Build();
+
+                        // Next, add the assistant message with tool calls to the conversation history.
+                        AssistantChatMessage assistantMessage = new(toolCalls);
+                        if (contentBuilder.Length > 0)
+                        {
+                            assistantMessage.Content.Add(ChatMessageContentPart.CreateTextPart(contentBuilder.ToString()));
+                        }
+
+                        messages.Add(assistantMessage);
+
+                        // Then, add a new tool message for each tool call to be resolved.
+                        foreach (ChatToolCall toolCall in toolCalls)
+                        {
+                            if (toolCall.FunctionName == "serp_search_tool")
+                            {
+                                string jsonParam = toolCall.FunctionArguments.ToString();
+                                SerpParam searchParam = JsonSerializer.Deserialize<SerpParam>(jsonParam);
+                                string toolResult = await _serpService.SearchGoogleWithString(searchParam.keywords);
+                                messages.Add(new ToolChatMessage(toolCall.Id, toolResult));
+                            }
+                        }
+                        requiresAction = true;
+                        break;
+                    default:
+                        break;
+                }
             }
         }
+        while (requiresAction);
+        Console.WriteLine("GetChatResultStreaming() leave!");
     }
 
     public async Task<string> GetChatTitle(string question)
@@ -213,6 +323,125 @@ internal class LlmClient : ILlmService
         {
             Console.WriteLine("Error embed text: " + ex);
             return null;
+        }
+    }
+
+    private class SerpParam
+    {
+        public string keywords { get; set; }
+    }
+
+    public class StreamingChatToolCallsBuilder
+    {
+        private readonly Dictionary<int, string> _indexToToolCallId = [];
+        private readonly Dictionary<int, string> _indexToFunctionName = [];
+        private readonly Dictionary<int, SequenceBuilder<byte>> _indexToFunctionArguments = [];
+
+        public void Append(StreamingChatToolCallUpdate toolCallUpdate)
+        {
+            // Keep track of which tool call ID belongs to this update index.
+            if (toolCallUpdate.ToolCallId != null)
+            {
+                _indexToToolCallId[toolCallUpdate.Index] = toolCallUpdate.ToolCallId;
+            }
+
+            // Keep track of which function name belongs to this update index.
+            if (toolCallUpdate.FunctionName != null)
+            {
+                _indexToFunctionName[toolCallUpdate.Index] = toolCallUpdate.FunctionName;
+            }
+
+            // Keep track of which function arguments belong to this update index,
+            // and accumulate the arguments as new updates arrive.
+            if (toolCallUpdate.FunctionArgumentsUpdate != null && !toolCallUpdate.FunctionArgumentsUpdate.ToMemory().IsEmpty)
+            {
+                if (!_indexToFunctionArguments.TryGetValue(toolCallUpdate.Index, out SequenceBuilder<byte> argumentsBuilder))
+                {
+                    argumentsBuilder = new SequenceBuilder<byte>();
+                    _indexToFunctionArguments[toolCallUpdate.Index] = argumentsBuilder;
+                }
+
+                argumentsBuilder.Append(toolCallUpdate.FunctionArgumentsUpdate);
+            }
+        }
+
+        public IReadOnlyList<ChatToolCall> Build()
+        {
+            List<ChatToolCall> toolCalls = [];
+
+            foreach ((int index, string toolCallId) in _indexToToolCallId)
+            {
+                ReadOnlySequence<byte> sequence = _indexToFunctionArguments[index].Build();
+
+                ChatToolCall toolCall = ChatToolCall.CreateFunctionToolCall(
+                    id: toolCallId,
+                    functionName: _indexToFunctionName[index],
+                    functionArguments: BinaryData.FromBytes(sequence.ToArray()));
+
+                toolCalls.Add(toolCall);
+            }
+
+            return toolCalls;
+        }
+    }
+
+    public class SequenceBuilder<T>
+    {
+        Segment _first;
+        Segment _last;
+
+        public void Append(ReadOnlyMemory<T> data)
+        {
+            if (_first == null)
+            {
+                Debug.Assert(_last == null);
+                _first = new Segment(data);
+                _last = _first;
+            }
+            else
+            {
+                _last = _last!.Append(data);
+            }
+        }
+
+        public ReadOnlySequence<T> Build()
+        {
+            if (_first == null)
+            {
+                Debug.Assert(_last == null);
+                return ReadOnlySequence<T>.Empty;
+            }
+
+            if (_first == _last)
+            {
+                Debug.Assert(_first.Next == null);
+                return new ReadOnlySequence<T>(_first.Memory);
+            }
+
+            return new ReadOnlySequence<T>(_first, 0, _last!, _last!.Memory.Length);
+        }
+
+        private sealed class Segment : ReadOnlySequenceSegment<T>
+        {
+            public Segment(ReadOnlyMemory<T> items) : this(items, 0)
+            {
+            }
+
+            private Segment(ReadOnlyMemory<T> items, long runningIndex)
+            {
+                Debug.Assert(runningIndex >= 0);
+                Memory = items;
+                RunningIndex = runningIndex;
+            }
+
+            public Segment Append(ReadOnlyMemory<T> items)
+            {
+                long runningIndex;
+                checked { runningIndex = RunningIndex + Memory.Length; }
+                Segment segment = new(items, runningIndex);
+                Next = segment;
+                return segment;
+            }
         }
     }
 }

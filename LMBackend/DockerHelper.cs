@@ -143,7 +143,8 @@ internal class DockerHelper : IDockerHelper
                 },
                 Binds = new List<string>
                 {
-                    "/home/phison/.cache/huggingface:/root/.cache/huggingface"
+                    "/home/phison/.cache/huggingface:/root/.cache/huggingface",
+                    "/home/phison/tenny_lu/chat_templates:/app/templates"
                 },
                 PortBindings = new Dictionary<string, IList<PortBinding>>
                 {
@@ -167,12 +168,28 @@ internal class DockerHelper : IDockerHelper
         {
             param.Cmd.Add("--max-model-len");
             param.Cmd.Add("5000");
+            param.Cmd.Add("--enable-auto-tool-choice");
+            param.Cmd.Add("--tool-call-parser");
+            param.Cmd.Add("llama3_json");
+            param.Cmd.Add("--chat-template");
+            param.Cmd.Add("/app/templates/llama3.2.jinja");
         }
         else if (modelName == "Qwen/Qwen3-4B")
         {
             param.Cmd.Add("--enable-auto-tool-choice");
             param.Cmd.Add("--tool-call-parser");
             param.Cmd.Add("hermes");
+            param.Cmd.Add("--chat-template");
+            param.Cmd.Add("/app/templates/qwen3.2.jinja");
+        }
+        else if (modelName == "google/gemma-3-4b-it" || modelName == "google/gemma-3n-E2B-it")
+        {
+            // -enable-auto-tool-choice     --tool-call-parser pythonic     --chat-template tool_chat_template_gemma3_json.jinja
+            param.Cmd.Add("--enable-auto-tool-choice");
+            param.Cmd.Add("--tool-call-parser");
+            param.Cmd.Add("pythonic");
+            param.Cmd.Add("--chat-template");
+            param.Cmd.Add("tool_chat_template_gemma3_json.jinja");
         }
         return param;
     }
