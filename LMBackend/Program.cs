@@ -31,6 +31,7 @@ builder.Services.AddSingleton<IAudioQueue, AudioQueue>();
 builder.Services.AddSingleton<IAudioConverter, FfmpegAudioConverter>();
 builder.Services.AddHostedService<AudioConverterService>();
 builder.Services.AddHostedService<SttProcessingService>();
+builder.Services.AddSingleton<ITtsService, TtsService>();
 
 // Add services to the container.
 // Fix navigation property cycle in JSON

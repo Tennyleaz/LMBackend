@@ -19,5 +19,6 @@
         public const string WHISPER_BIN_PATH = "";  // whisper.cpp binary
         public const int WHISPER_CHUNK_SECONDS = 5;
         public const int WHISPER_SAMPLE_RATE = 16000;
+        public const string TTS_ENDPOINT = LLM_BASE_URL + ":9095/tts";
     }
 }
