@@ -7,15 +7,18 @@ public class SttProcessingService : BackgroundService
     private readonly IAudioQueue _audioQueue;
     private readonly ISttService _sttService;
     private readonly IWebSocketManager _webSocketManager;
+    private readonly ILlmService _llmService;
 
     public SttProcessingService(
         IAudioQueue audioQueue,
         ISttService sttService,
-        IWebSocketManager webSocketManager)
+        IWebSocketManager webSocketManager,
+        ILlmService llmService)
     {
         _audioQueue = audioQueue;
         _sttService = sttService;
         _webSocketManager = webSocketManager;
+        _llmService = llmService;
     }
 
 
@@ -36,6 +39,9 @@ public class SttProcessingService : BackgroundService
             IAsyncEnumerable<SegmentData> datas = _sttService.WhisperChunk(chunk.File);
             await foreach (SegmentData data in datas)
             {
+                // Ask LLM to fix possible errors
+                string text = await _llmService.CorrectSpeechResult(data.Text);
+
                 // Send transcription result back to the client
                 double start = data.Start.TotalSeconds;
                 double end = data.End.TotalSeconds;
@@ -44,7 +50,7 @@ public class SttProcessingService : BackgroundService
                     isStopped = chunk.IsLast,
                     start = start,
                     end = end,
-                    text = data.Text,
+                    text = text,
                     language = data.Language
                 };
                 await _webSocketManager.SendMessageAsync(chunk.SocketId, sttResult);

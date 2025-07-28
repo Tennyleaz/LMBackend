@@ -317,6 +317,46 @@ internal class LlmClient : ILlmService
         return result.Value.Content[0].Text;
     }
 
+    public async Task<string> CorrectSpeechResult(string text)
+    {
+        await TryCreateChatClient();
+
+        string systemPrompt = "You are an expert in correcting speech-to-text errors. " +
+            "Only correct what is clearly a recognition error, do not translate, do not answer the question, do not add extra explanations. " +
+            "Only output the original and corrected text, and nothing else. If no error, output the original in both original/corrected text fields." +
+            "The user input is: ";
+        SystemChatMessage systemMessage = new SystemChatMessage(systemPrompt);
+        UserChatMessage userMessage = new UserChatMessage(text);
+        ChatMessage[] messages = { systemMessage, userMessage };
+        ChatCompletionOptions options = new ChatCompletionOptions
+        {
+            ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+                jsonSchemaFormatName: "transcript_schema",
+                jsonSchema: BinaryData.FromBytes("""
+                    {
+                        "type": "object",
+                        "properties": {
+                            "corrected_text": { 
+                                "type": "string",
+                                "description": "The corrected user input text."
+                            },
+                            "original_text": { 
+                                "type": "string",
+                                "description": "The original user input text."
+                            }
+                        },
+                        "required": ["corrected_text", "original_text"],
+                        "additionalProperties": false
+                    }
+                    """u8.ToArray()),
+                jsonSchemaIsStrict: true),
+            Temperature = 0
+        };
+        ClientResult<ChatCompletion> result = await _client.CompleteChatAsync(messages, options);
+        TranscriptCorrectScheam corrected = JsonSerializer.Deserialize<TranscriptCorrectScheam>(result.Value.Content[0].Text);
+        return corrected.corrected_text;
+    }
+
     private static string RemoveThink(string text)
     {
         int start = text.IndexOf("<think>");
@@ -501,4 +541,10 @@ public class GoogleSearchKeyword
 {
     public string keywords { get; set; }
     public bool isNeedGoogleSearch { get; set; }
+}
+
+public class TranscriptCorrectScheam
+{
+    public string corrected_text { get; set; }
+    public string original_text { get; set; }
 }

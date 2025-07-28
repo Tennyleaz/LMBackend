@@ -8,5 +8,6 @@ public interface ILlmService
     public Task<string> GetChatTitle(string question);
     public Task<GoogleSearchKeyword> GetGoogleSearchKeyword(string question);
     public Task<string> SummarizeWebpage(string html, string query);
+    public Task<string> CorrectSpeechResult(string text);
     public Task<float[]> GetEmbedding(string text);
 }
