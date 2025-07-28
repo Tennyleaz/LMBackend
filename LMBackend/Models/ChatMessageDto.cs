@@ -7,4 +7,5 @@ public class ChatMessageDto
     public DateTime Timestamp { get; set; }
     public bool UseRetrieval { get; set; }
     public bool UseWebSearch { get; set; }
+    public bool UseVoice { get; set; }
 }

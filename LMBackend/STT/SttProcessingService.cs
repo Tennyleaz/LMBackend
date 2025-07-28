@@ -44,7 +44,8 @@ public class SttProcessingService : BackgroundService
                     isStopped = chunk.IsLast,
                     start = start,
                     end = end,
-                    text = data.Text
+                    text = data.Text,
+                    language = data.Language
                 };
                 await _webSocketManager.SendMessageAsync(chunk.SocketId, sttResult);
             }

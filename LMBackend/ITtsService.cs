@@ -1,4 +1,6 @@
-﻿namespace LMBackend;
+﻿using LMBackend.Models;
+
+namespace LMBackend;
 
 public interface ITtsService
 {
@@ -8,7 +10,7 @@ public interface ITtsService
     /// <param name="text"></param>
     /// <param name="locale"></param>
     /// <returns></returns>
-    Task<Guid> TextToSpeech(string text, string locale);
+    Task<Guid> TextToSpeech(string text, SpeechLocale locale);
 
     /// <summary>
     /// Returns the audio file by id.

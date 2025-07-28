@@ -17,7 +17,7 @@ public class SpeechController : Controller
     }
 
     /// <summary>
-    /// Get the 
+    /// Get the audio file from text/locale.
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
@@ -33,6 +33,7 @@ public class SpeechController : Controller
         var stream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read);
         HttpContext.Response.OnCompleted(async () =>
         {
+            await Task.Delay(100);
             _ttsService.DeleteAudioFile(id);
         });
         return File(stream, "audio/wav");

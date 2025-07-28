@@ -1,4 +1,5 @@
 ﻿
+using LMBackend.Models;
 using System.Net.Http;
 
 namespace LMBackend.STT;
@@ -38,23 +39,33 @@ public class TtsService : ITtsService
         return new FileInfo(fileName);
     }
 
-    public async Task<Guid> TextToSpeech(string text, string locale)
+    public async Task<Guid> TextToSpeech(string text, SpeechLocale locale)
     {
+        text = text.Replace("Doing web search...", "");
+        text = text.Replace("Doing RAG search...", "");
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return Guid.Empty;
+        }
         var body = new
         {
             text = text,
-            locale = locale
+            lang = (char)locale
         };
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync("", body);
         if (response.IsSuccessStatusCode)
         {
             Guid audioId = Guid.NewGuid();
             string fileName = Path.Combine(_audioDirectory, audioId.ToString() + ".wav");
-            using (FileStream fs = new FileStream(fileName + fileName, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 await response.Content.CopyToAsync(fs);
                 return audioId;
             }
+        }
+        else
+        {
+            Console.WriteLine("Cannot get TTS wav! " + response.StatusCode);
         }
         return Guid.Empty;
     }

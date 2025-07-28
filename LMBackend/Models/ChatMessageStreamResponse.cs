@@ -14,4 +14,6 @@ public class ChatMessageStreamResponse
     public string Model { get; set; }
     public ChatDto ChatModified { get; set; }
     public string Error { get; set; }
+    // True if request is using speech
+    public bool UseVoice { get; set; }
 }

@@ -461,7 +461,8 @@ public class ChatController : ControllerBase
             Model = modelName,
             Status = StreamStatus.Completed,
             Timestamp = botMessage.Timestamp,
-            ChatModified = modifiedChat
+            ChatModified = modifiedChat,
+            UseVoice = request.UseVoice  // Tell client to do TTS for the whole text
         };
 
         await Response.WriteAsync(JsonSerializer.Serialize(done, options) + "\n", ct);
