@@ -19,7 +19,7 @@ public class WhisperService : ISttService, IDisposable
         if (processor == null)
         {
             processor = whisperFactory.CreateBuilder()
-                .WithLanguage("zh")
+                .WithLanguage("auto")
                 .Build();
         }
         Console.WriteLine("Whisper factory build.");
@@ -28,9 +28,9 @@ public class WhisperService : ISttService, IDisposable
     public async IAsyncEnumerable<SegmentData> WhisperChunk(string audioFile)
     {
         using var fileStream = System.IO.File.OpenRead(audioFile);
-        await foreach (var result in processor.ProcessAsync(fileStream))
+        await foreach (SegmentData result in processor.ProcessAsync(fileStream))
         {
-            Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+            Console.WriteLine($"{result.Start}->{result.End} ({result.Language}): {result.Text}");
             yield return result;
         }
     }
