@@ -348,88 +348,10 @@ public class ChatController : ControllerBase
             ragResult = string.Join("\n", chunkResult);
         }
 
-        // Do web search
-        if (request.UseWebSearch)
-        {
-            // Return a status text
-            string statusText = "*Doing web search...*  \n";
-            botReplyBuilder.Append(statusText);
-            await WriteJsonStreamProgress(statusText, index, id, botMessage, userMessage.Id, options, modelName);
-            index++;
-
-            // Search for web
-            GoogleSearchKeyword gk = await _llmClient.GetGoogleSearchKeyword(request.Text);
-            if (gk.isNeedGoogleSearch)
-            {
-                SerpResultSchema searchResult = await _serpService.SearchGoogle(gk.keywords);
-                if (searchResult != null && searchResult.organic_results.Length > 0)
-                {
-                    // Summarize the json to text
-                    foreach (SerpOrganicResult o in searchResult.organic_results)
-                    {
-                        ragResult += "\n" + JsonSerializer.Serialize(o);
-
-                        // Tell client what we have searched
-                        string searchedSite = $" - <a href=\"{o.link}\" target=\"_blank\">{o.title}</a>  \n";
-                        botReplyBuilder.Append(searchedSite);
-                        await WriteJsonStreamProgress(searchedSite, index, id, botMessage, userMessage.Id, options, modelName);
-                        index++;
-                    }
-                }
-                /*List<GoogleSearchResult> searchResults = await GoogleCustomSearchService.Instance.SearchAsync(gk.keywords, 5);
-                if (searchResults != null && searchResults.Count > 0)
-                {
-                    // Get content from URL
-                    foreach (GoogleSearchResult searchResult in searchResults)
-                    {
-                        string html = await _scraper.Scrap(searchResult.link);
-                        if (string.IsNullOrEmpty(html))
-                        {
-                            Console.WriteLine("HTML is empty for link: " + searchResult.link);
-                            continue;
-                        }
-                        Console.WriteLine(html);
-
-                        // Summarize the html to text
-                        string content;
-                        try
-                        {
-                            content = await _llmClient.SummarizeWebpage(html, request.Text);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine("Failed to generate summary for:" + searchResult.link + "\nError: " + ex.Message);
-                            continue;
-                        }
-
-                        // Create prompt
-                        ragResult += $"\nURL: {searchResult.formattedUrl}\nTitle: {searchResult.title}\nContent: {content}\n";
-
-                        // Tell client what we have searched
-                        //string searchedSite = $" - [{searchResult.title}]({searchResult.link})\n";
-                        string searchedSite = $" - <a href=\"{searchResult.link}\" target=\"_blank\">{searchResult.title}</a>  \n";
-                        botReplyBuilder.Append(searchedSite);
-                        await WriteJsonStreamProgress(searchedSite, index, id, botMessage, userMessage.Id, options);
-                        index++;
-                    }
-
-                    // Append a linebreak after list
-                    botReplyBuilder.Append("\n");
-                    await WriteJsonStreamProgress("\n", index, id, botMessage, userMessage.Id, options);
-                    index++;
-                }*/
-                else
-                {
-                    await WriteJsonStreamError(StatusCodes.Status503ServiceUnavailable, "Failed to search Google.", id, options, modelName);
-                    return;
-                }
-            }
-        }
-
         // Call streaming endpoint
         try
         {
-            IAsyncEnumerable<string> streamingTexts = _llmClient.GetChatResultStreaming(parent.Messages, request.Text, ragResult);
+            IAsyncEnumerable<string> streamingTexts = _llmClient.GetChatResultStreaming(parent.Messages, request.Text, ragResult, request.UseWebSearch, request.UseVoice, ct);
             await foreach (string part in streamingTexts.WithCancellation(ct))
             {
                 botReplyBuilder.Append(part);

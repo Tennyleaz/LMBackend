@@ -6,6 +6,7 @@ using System.ClientModel;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -66,7 +67,7 @@ internal class LlmClient : ILlmService
 
         if (webScrapeTool == null)
         {
-            webScrapeTool = ChatTool.CreateFunctionTool(SCRAPE_TOOL_NAME, "Scrape a URL and get it's result.",
+            webScrapeTool = ChatTool.CreateFunctionTool(SCRAPE_TOOL_NAME, "Scrape a URL and get its result.",
                 BinaryData.FromString(
                 @"
                 {
@@ -119,7 +120,7 @@ internal class LlmClient : ILlmService
         return RemoveThink(result.Value.Content[0].Text);
     }
 
-    public async IAsyncEnumerable<string> GetChatResultStreaming(List<Models.ChatMessage> oldMessages, string question, string ragResult)
+    public async IAsyncEnumerable<string> GetChatResultStreaming(List<Models.ChatMessage> oldMessages, string question, string ragResult, bool useWebSearch, bool useVoice, [EnumeratorCancellation] CancellationToken ct)
     {
         await TryCreateChatClient();
 
@@ -133,6 +134,14 @@ internal class LlmClient : ILlmService
         {
             systemPrompt = "Use the context below to answer the question as best as you can. If the answer is not in the context or not relvent, notify the user.\n\nContext:\n\n";
             systemPrompt += ragResult;
+        }
+        // Tell LLM use short response, if using TTS
+        if (useVoice)
+        {
+            systemPrompt = "You are a helpful, conversational AI assistant for a voice chatbot. " +
+                "Reply to user questions in a clear, concise way, using one or two sentences unless more detail is needed. " +
+                "Keep answers brief and easy to understand when spoken aloud. " + 
+                "Use the user's input language to reply.";
         }
         List<ChatMessage> messages = new List<ChatMessage>
         {
@@ -153,23 +162,31 @@ internal class LlmClient : ILlmService
         }
         // Add the new question
         messages.Add(new UserChatMessage(question));
+        ChatCompletionOptions options;
         // Add tool call
-        ChatCompletionOptions options = new ChatCompletionOptions
+        if (useWebSearch)
         {
-            AllowParallelToolCalls = false,
-            ToolChoice = ChatToolChoice.CreateAutoChoice(),
-            Tools = { serpSearchTool }
-        };
+            options  = new ChatCompletionOptions
+            {
+                AllowParallelToolCalls = false,
+                ToolChoice = ChatToolChoice.CreateAutoChoice(),
+                Tools = { serpSearchTool }
+            };
+        }
+        else
+        {
+            options = new ChatCompletionOptions();
+        }
         // Call LLM API
         bool requiresAction;
         do
         {
-            requiresAction = false;            
+            requiresAction = false;
             StringBuilder contentBuilder = new();
             StreamingChatToolCallsBuilder toolCallsBuilder = new();
             
-            AsyncCollectionResult<StreamingChatCompletionUpdate> updates = _client.CompleteChatStreamingAsync(messages, options);
-            await foreach (StreamingChatCompletionUpdate completionUpdate in updates)
+            AsyncCollectionResult<StreamingChatCompletionUpdate> updates = _client.CompleteChatStreamingAsync(messages, options, ct);
+            await foreach (StreamingChatCompletionUpdate completionUpdate in updates.WithCancellation(ct))
             {
                 foreach (ChatMessageContentPart contentPart in completionUpdate.ContentUpdate)
                 {
@@ -195,7 +212,7 @@ internal class LlmClient : ILlmService
                         IReadOnlyList<ChatToolCall> toolCalls = toolCallsBuilder.Build();
 
                         // Next, add the assistant message with tool calls to the conversation history.
-                        AssistantChatMessage assistantMessage = new(toolCalls);
+                        AssistantChatMessage assistantMessage = new AssistantChatMessage(toolCalls);
                         if (contentBuilder.Length > 0)
                         {
                             assistantMessage.Content.Add(ChatMessageContentPart.CreateTextPart(contentBuilder.ToString()));
@@ -208,6 +225,8 @@ internal class LlmClient : ILlmService
                         {
                             if (toolCall.FunctionName == SERP_TOOL_NAME)
                             {
+                                yield return "*Doing web search...*  \n";
+
                                 string jsonParam = toolCall.FunctionArguments.ToString();
                                 SerpParam searchParam = JsonSerializer.Deserialize<SerpParam>(jsonParam);
                                 string toolResult = await _serpService.SearchGoogleWithString(searchParam.keywords);
@@ -222,7 +241,7 @@ internal class LlmClient : ILlmService
             }
         }
         while (requiresAction);
-        Console.WriteLine("GetChatResultStreaming() leave!");
+        //Console.WriteLine("GetChatResultStreaming() leave!");
     }
 
     public async Task<string> GetChatTitle(string question)
