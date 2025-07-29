@@ -2,18 +2,19 @@
 
 namespace LMBackend.RAG;
 
-public class ChromaVectorStoreService : IVectorStoreService
+internal class ChromaVectorStoreService : IVectorStoreService
 {
-    private readonly HttpClient _httpClient;
-    private readonly ChromaClient _chromaClient;
+    //private readonly HttpClient _httpClient;
+    private readonly IChromaClient _chromaClient;
     private const string TENANT = "tenny";
     private const string DATABASE = "tennydb";
 
-    public ChromaVectorStoreService()
+    public ChromaVectorStoreService(IChromaClient chromaClient)
     {
-        _httpClient = new HttpClient();
-        _httpClient.BaseAddress = new Uri(Constants.CHROMA_ENDPOINT);
-        _chromaClient = new ChromaClient(Constants.CHROMA_ENDPOINT, _httpClient);
+        //_httpClient = httpClient;
+        //_httpClient.BaseAddress = new Uri(Constants.CHROMA_ENDPOINT);
+        //_chromaClient = new ChromaClient(Constants.CHROMA_ENDPOINT, _httpClient);
+        _chromaClient = chromaClient;
     }
 
     /// <summary>

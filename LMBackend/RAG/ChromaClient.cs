@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace LMBackend.RAG;
 
-public partial class ChromaClient
+internal class ChromaClient : IChromaClient
 {
     private string _baseUrl;
 
@@ -15,8 +15,9 @@ public partial class ChromaClient
     private static Lazy<JsonSerializerOptions> _settings = new Lazy<JsonSerializerOptions>(CreateSerializerSettings, true);
     private JsonSerializerOptions _instanceSettings;
 
-    public ChromaClient(string baseUrl, HttpClient httpClient)
+    public ChromaClient(HttpClient httpClient)
     {
+        string baseUrl = Constants.CHROMA_ENDPOINT;
         _baseUrl = string.IsNullOrEmpty(baseUrl) || baseUrl.EndsWith("/")
             ? baseUrl
             : baseUrl + "/";
@@ -29,17 +30,17 @@ public partial class ChromaClient
         {
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
         };
-        UpdateJsonSerializerSettings(settings);
+        //UpdateJsonSerializerSettings(settings);
         return settings;
     }
 
     protected JsonSerializerOptions JsonSerializerSettings { get { return _instanceSettings ?? _settings.Value; } }
 
-    static partial void UpdateJsonSerializerSettings(JsonSerializerOptions settings);
+    //static partial void UpdateJsonSerializerSettings(JsonSerializerOptions settings);
 
-    partial void PrepareRequest(HttpClient client, HttpRequestMessage request, string url);
-    partial void PrepareRequest(HttpClient client, HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
-    partial void ProcessResponse(HttpClient client, HttpResponseMessage response);
+    //partial void PrepareRequest(HttpClient client, HttpRequestMessage request, string url);
+    //partial void PrepareRequest(HttpClient client, HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
+    //partial void ProcessResponse(HttpClient client, HttpResponseMessage response);
 
     /// <summary>
     /// Retrieves the current user's identity, tenant, and databases.
@@ -73,12 +74,12 @@ public partial class ChromaClient
                 // Operation Path: "api/v2/auth/identity"
                 urlBuilder_.Append("api/v2/auth/identity");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -93,7 +94,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -167,12 +168,12 @@ public partial class ChromaClient
                 // Operation Path: "api/v2/healthcheck"
                 urlBuilder_.Append("api/v2/healthcheck");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -187,7 +188,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -261,12 +262,12 @@ public partial class ChromaClient
                 // Operation Path: "api/v2/heartbeat"
                 urlBuilder_.Append("api/v2/heartbeat");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -281,7 +282,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -355,12 +356,12 @@ public partial class ChromaClient
                 // Operation Path: "api/v2/pre-flight-checks"
                 urlBuilder_.Append("api/v2/pre-flight-checks");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -375,7 +376,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -450,12 +451,12 @@ public partial class ChromaClient
                 // Operation Path: "api/v2/reset"
                 urlBuilder_.Append("api/v2/reset");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -470,7 +471,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -558,12 +559,12 @@ public partial class ChromaClient
                 // Operation Path: "api/v2/tenants"
                 urlBuilder_.Append("api/v2/tenants");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -578,7 +579,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -668,12 +669,12 @@ public partial class ChromaClient
                 urlBuilder_.Append("api/v2/tenants/");
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(tenant_name, System.Globalization.CultureInfo.InvariantCulture)));
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -688,7 +689,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -803,12 +804,12 @@ public partial class ChromaClient
                 }
                 urlBuilder_.Length--;
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -823,7 +824,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -921,12 +922,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/databases");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -941,7 +942,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -1038,12 +1039,12 @@ public partial class ChromaClient
                 urlBuilder_.Append("/databases/");
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(database, System.Globalization.CultureInfo.InvariantCulture)));
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -1058,7 +1059,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -1165,12 +1166,12 @@ public partial class ChromaClient
                 urlBuilder_.Append("/databases/");
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(database, System.Globalization.CultureInfo.InvariantCulture)));
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -1185,7 +1186,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -1307,12 +1308,12 @@ public partial class ChromaClient
                 }
                 urlBuilder_.Length--;
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -1327,7 +1328,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -1432,12 +1433,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(database, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/collections");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -1452,7 +1453,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -1556,12 +1557,12 @@ public partial class ChromaClient
                 urlBuilder_.Append("/collections/");
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -1576,7 +1577,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -1697,12 +1698,12 @@ public partial class ChromaClient
                 urlBuilder_.Append("/collections/");
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -1717,7 +1718,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -1831,12 +1832,12 @@ public partial class ChromaClient
                 urlBuilder_.Append("/collections/");
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -1851,7 +1852,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -1967,12 +1968,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/add");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -1987,7 +1988,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 201)
@@ -2078,12 +2079,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/count");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -2098,7 +2099,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -2216,12 +2217,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/delete");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -2236,7 +2237,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -2358,12 +2359,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/fork");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -2378,7 +2379,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -2500,12 +2501,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/get");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -2520,7 +2521,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -2656,12 +2657,12 @@ public partial class ChromaClient
                 }
                 urlBuilder_.Length--;
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -2676,7 +2677,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -2792,12 +2793,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/update");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -2812,7 +2813,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -2910,12 +2911,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(collection_id, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/upsert");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -2930,7 +2931,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -3038,12 +3039,12 @@ public partial class ChromaClient
                 urlBuilder_.Append(Uri.EscapeDataString(ConvertToString(database, System.Globalization.CultureInfo.InvariantCulture)));
                 urlBuilder_.Append("/collections_count");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -3058,7 +3059,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -3138,12 +3139,12 @@ public partial class ChromaClient
                 // Operation Path: "api/v2/version"
                 urlBuilder_.Append("api/v2/version");
 
-                PrepareRequest(client_, request_, urlBuilder_);
+                //PrepareRequest(client_, request_, urlBuilder_);
 
                 var url_ = urlBuilder_.ToString();
                 request_.RequestUri = new Uri(url_, UriKind.RelativeOrAbsolute);
 
-                PrepareRequest(client_, request_, url_);
+                //PrepareRequest(client_, request_, url_);
 
                 var response_ = await client_.SendAsync(request_, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 var disposeResponse_ = true;
@@ -3158,7 +3159,7 @@ public partial class ChromaClient
                             headers_[item_.Key] = item_.Value;
                     }
 
-                    ProcessResponse(client_, response_);
+                    //ProcessResponse(client_, response_);
 
                     var status_ = (int)response_.StatusCode;
                     if (status_ == 200)
@@ -3297,7 +3298,7 @@ public partial class ChromaClient
 }
 
 
-public class AddCollectionRecordsPayload
+internal class AddCollectionRecordsPayload
 {
 
     [JsonPropertyName("documents")]
@@ -3328,7 +3329,7 @@ public class AddCollectionRecordsPayload
 }
 
 
-public class AddCollectionRecordsResponse
+internal class AddCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3343,7 +3344,7 @@ public class AddCollectionRecordsResponse
 }
 
 
-public class ChecklistResponse
+internal class ChecklistResponse
 {
 
     [JsonPropertyName("max_batch_size")]
@@ -3362,7 +3363,7 @@ public class ChecklistResponse
 }
 
 
-public class Collection
+internal class Collection
 {
 
     [JsonPropertyName("configuration_json")]
@@ -3409,7 +3410,7 @@ public class Collection
 }
 
 
-public class CollectionConfiguration
+internal class CollectionConfiguration
 {
 
     //[JsonPropertyName("embedding_function")]
@@ -3433,7 +3434,7 @@ public class CollectionConfiguration
 }
 
 
-public class CreateCollectionPayload
+internal class CreateCollectionPayload
 {
 
     [JsonPropertyName("configuration")]
@@ -3461,7 +3462,7 @@ public class CreateCollectionPayload
 }
 
 
-public class CreateDatabasePayload
+internal class CreateDatabasePayload
 {
 
     [JsonPropertyName("name")]
@@ -3480,7 +3481,7 @@ public class CreateDatabasePayload
 }
 
 
-public class CreateDatabaseResponse
+internal class CreateDatabaseResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3495,7 +3496,7 @@ public class CreateDatabaseResponse
 }
 
 
-public class CreateTenantPayload
+internal class CreateTenantPayload
 {
 
     [JsonPropertyName("name")]
@@ -3514,7 +3515,7 @@ public class CreateTenantPayload
 }
 
 
-public class CreateTenantResponse
+internal class CreateTenantResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3529,7 +3530,7 @@ public class CreateTenantResponse
 }
 
 
-public class Database
+internal class Database
 {
 
     [JsonPropertyName("id")]
@@ -3556,7 +3557,7 @@ public class Database
 }
 
 
-public class DeleteCollectionRecordsPayload : RawWhereFields
+internal class DeleteCollectionRecordsPayload : RawWhereFields
 {
 
     [JsonPropertyName("ids")]
@@ -3565,7 +3566,7 @@ public class DeleteCollectionRecordsPayload : RawWhereFields
 }
 
 
-public class DeleteCollectionRecordsResponse
+internal class DeleteCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3580,7 +3581,7 @@ public class DeleteCollectionRecordsResponse
 }
 
 
-public class DeleteDatabaseResponse
+internal class DeleteDatabaseResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3595,7 +3596,7 @@ public class DeleteDatabaseResponse
 }
 
 
-/*public class EmbeddingFunctionConfiguration
+/*internal class EmbeddingFunctionConfiguration
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3610,7 +3611,7 @@ public class DeleteDatabaseResponse
 }
 
 
-public class EmbeddingFunctionNewConfiguration
+internal class EmbeddingFunctionNewConfiguration
 {
 
     [JsonPropertyName("config")]
@@ -3633,7 +3634,7 @@ public class EmbeddingFunctionNewConfiguration
 }*/
 
 
-public class ErrorResponse
+internal class ErrorResponse
 {
 
     [JsonPropertyName("error")]
@@ -3656,7 +3657,7 @@ public class ErrorResponse
 }
 
 
-public class ForkCollectionPayload
+internal class ForkCollectionPayload
 {
 
     [JsonPropertyName("new_name")]
@@ -3675,7 +3676,7 @@ public class ForkCollectionPayload
 }
 
 
-public class GetRequestPayload : RawWhereFields
+internal class GetRequestPayload : RawWhereFields
 {
 
     [JsonPropertyName("ids")]
@@ -3697,7 +3698,7 @@ public class GetRequestPayload : RawWhereFields
 }
 
 
-public class GetResponse
+internal class GetResponse
 {
 
     [JsonPropertyName("documents")]
@@ -3734,7 +3735,7 @@ public class GetResponse
 }
 
 
-public class GetTenantResponse
+internal class GetTenantResponse
 {
 
     [JsonPropertyName("name")]
@@ -3753,7 +3754,7 @@ public class GetTenantResponse
 }
 
 
-public class GetUserIdentityResponse
+internal class GetUserIdentityResponse
 {
 
     [JsonPropertyName("databases")]
@@ -3780,13 +3781,13 @@ public class GetUserIdentityResponse
 }
 
 
-//public class HashMap : Dictionary<string, bool>
+//internal class HashMap : Dictionary<string, bool>
 //{
 
 //}
 
 
-public class HeartbeatResponse
+internal class HeartbeatResponse
 {
 
     [JsonPropertyName("nanosecond heartbeat")]
@@ -3805,7 +3806,7 @@ public class HeartbeatResponse
 }
 
 
-public class HnswConfiguration
+internal class HnswConfiguration
 {
 
     [JsonPropertyName("ef_construction")]
@@ -3870,13 +3871,13 @@ public enum Include
 }
 
 
-//public class IncludeList : System.Collections.ObjectModel.Collection<Include>
+//internal class IncludeList : System.Collections.ObjectModel.Collection<Include>
 //{
 
 //}
 
 
-public class QueryRequestPayload : RawWhereFields
+internal class QueryRequestPayload : RawWhereFields
 {
 
     [JsonPropertyName("ids")]
@@ -3938,7 +3939,7 @@ public class QueryResponse
 }
 
 
-public class RawWhereFields
+internal class RawWhereFields
 {
 
     [JsonPropertyName("where")]
@@ -3959,7 +3960,7 @@ public class RawWhereFields
 }
 
 
-public class SpannConfiguration
+internal class SpannConfiguration
 {
 
     [JsonPropertyName("ef_construction")]
@@ -4001,7 +4002,7 @@ public class SpannConfiguration
 }
 
 
-public class UpdateCollectionConfiguration
+internal class UpdateCollectionConfiguration
 {
 
     //[JsonPropertyName("embedding_function")]
@@ -4025,7 +4026,7 @@ public class UpdateCollectionConfiguration
 }
 
 
-public class UpdateCollectionPayload
+internal class UpdateCollectionPayload
 {
 
     [JsonPropertyName("new_configuration")]
@@ -4049,7 +4050,7 @@ public class UpdateCollectionPayload
 }
 
 
-public class UpdateCollectionRecordsPayload
+internal class UpdateCollectionRecordsPayload
 {
 
     [JsonPropertyName("documents")]
@@ -4080,7 +4081,7 @@ public class UpdateCollectionRecordsPayload
 }
 
 
-public class UpdateCollectionRecordsResponse
+internal class UpdateCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -4095,7 +4096,7 @@ public class UpdateCollectionRecordsResponse
 }
 
 
-public class UpdateCollectionResponse
+internal class UpdateCollectionResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -4110,7 +4111,7 @@ public class UpdateCollectionResponse
 }
 
 
-public class UpdateHnswConfiguration
+internal class UpdateHnswConfiguration
 {
 
     [JsonPropertyName("batch_size")]
@@ -4139,7 +4140,7 @@ public class UpdateHnswConfiguration
 }
 
 
-public class UpsertCollectionRecordsPayload
+internal class UpsertCollectionRecordsPayload
 {
 
     [JsonPropertyName("documents")]
@@ -4170,7 +4171,7 @@ public class UpsertCollectionRecordsPayload
 }
 
 
-public class UpsertCollectionRecordsResponse
+internal class UpsertCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -4185,13 +4186,13 @@ public class UpsertCollectionRecordsResponse
 }
 
 
-//public class Vec : System.Collections.ObjectModel.Collection<Anonymous>
+//internal class Vec : System.Collections.ObjectModel.Collection<Anonymous>
 //{
 
 //}
 
 
-//public class Anonymous
+//internal class Anonymous
 //{
 
 //    [JsonPropertyName("configuration_json")]
@@ -4249,7 +4250,7 @@ public class UpsertCollectionRecordsResponse
 
 
 
-public class ApiException : Exception
+internal class ApiException : Exception
 {
     public int StatusCode { get; private set; }
 
@@ -4271,7 +4272,7 @@ public class ApiException : Exception
     }
 }
 
-public class ApiException<TResult> : ApiException
+internal class ApiException<TResult> : ApiException
 {
     public TResult Result { get; private set; }
 

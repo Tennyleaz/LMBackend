@@ -1,5 +1,6 @@
 using LMBackend;
 using LMBackend.Models;
+using LMBackend.RAG;
 using LMBackend.STT;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add my dependencies
 builder.Services.AddSingleton<IDockerHelper, DockerHelper>();
 builder.Services.AddSingleton<ILlmService, LlmClient>();
+builder.Services.AddSingleton<IChromaClient, LMBackend.RAG.ChromaClient>();
 builder.Services.AddSingleton<IVectorStoreService, LMBackend.RAG.ChromaVectorStoreService>();
 builder.Services.AddSingleton<ISerpService, LMBackend.RAG.SerpService>();
 builder.Services.AddHttpClient<ISerpService, LMBackend.RAG.SerpService>(httpClient =>
