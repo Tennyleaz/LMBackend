@@ -192,15 +192,17 @@ public class DocumentsControllerTests
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
         JwtMock.PrepareMockJwt(_controller, userId);
-        byte[] buffer = Encoding.UTF8.GetBytes("Hello world!");
+        byte[] buffer = Encoding.UTF8.GetBytes("Hello world!\n2nd Line.\n");
         DocumentDto dto = new DocumentDto
         {
             Name = "Doc 2.txt",
             CreatedTime = DateTime.UtcNow,
             Data = buffer,
         };
-
-        _vectorService.Setup(x => x.UpsertAsync(It.IsAny<string>(), new List<RAG.ChromaChunk>())).ReturnsAsync(true);
+        // Mock functions
+        float[] fakeEmbedding = new float[1024];
+        _llmService.Setup(x => x.GetEmbedding(It.IsAny<string>())).ReturnsAsync(fakeEmbedding);
+        _vectorService.Setup(x => x.UpsertAsync(It.IsAny<string>(), It.IsAny<List<RAG.ChromaChunk>>())).ReturnsAsync(true);
 
         // Act
         ActionResult<Document> result = await _controller.PostDocument(dto);

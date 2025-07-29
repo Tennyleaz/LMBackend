@@ -214,7 +214,6 @@ public class UsersControllerTests
         Assert.That(user, Is.EqualTo(returnedUser));
     }
 
-
     [Test()]
     public async Task DeleteUser_TestRandomId()
     {
@@ -229,11 +228,40 @@ public class UsersControllerTests
     }
 
     [Test()]
+    public async Task DeleteUser_TestNoUser()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        JwtMock.PrepareMockJwt(_controller, userId);
+
+        // Act
+        var result = await _controller.DeleteUser(userId);
+
+        // Assert
+        Assert.That(result, Is.InstanceOf(typeof(NotFoundResult)));
+    }
+
+    [Test()]
     public async Task DeleteUser_TestActualId()
     {
         // Arrange
         var userId = _context.Users.First().Id; // Get the existing user's ID
         JwtMock.PrepareMockJwt(_controller, userId);
+        // Add some chats for user
+        Guid chatId = Guid.NewGuid();
+        Chat chat = new Chat
+        {
+            Id = chatId,
+            UserId = userId,
+        };
+        _context.Chats.Add(chat);
+        ChatMessage msg = new ChatMessage
+        {
+            Id = Guid.NewGuid(),
+            ChatId = chat.Id,
+        };
+        _context.ChatMessages.Add(msg);
+        await _context.SaveChangesAsync();
 
         // Act
         var result = await _controller.DeleteUser(userId);

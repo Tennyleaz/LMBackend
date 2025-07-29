@@ -1,4 +1,5 @@
 ﻿using LMBackend.Models;
+using LMBackend.RAG;
 using LMBackend.Tests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -6,7 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using OpenAI.VectorStores;
 using System.Security.Claims;
+using UglyToad.PdfPig.DocumentLayoutAnalysis;
 
 namespace LMBackend.Controllers.Tests;
 
@@ -336,12 +339,24 @@ public class ChatControllerTests
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
         JwtMock.PrepareMockJwt(_controller, userId);
-        Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
+        // Create new chat with no messages
+        Guid chatId = Guid.NewGuid();
+        Chat chat = new Chat
+        {
+            Id = chatId,
+            UserId = userId, // Assign the first user's ID
+            Title = "Test Chat",
+            CreatedTime = DateTime.UtcNow,
+        };
+        _context.Chats.Add(chat);
+        await _context.SaveChangesAsync();
         ChatMessageDto dto = new ChatMessageDto
         {
             Text = "New chat message",
             Timestamp = DateTime.UtcNow
         };
+        // Mock create title
+        _llmService.Setup(x => x.GetChatTitle(It.IsAny<string>())).ReturnsAsync("Fake chat title");
 
         // Act
         ActionResult<ChatMessageResponse> result = await _controller.PostChatMessage(chatId, dto);
@@ -357,10 +372,117 @@ public class ChatControllerTests
     }
 
     [Test()]
+    public async Task PostChatMessage_TestLlmAggregateException()
+    {
+        // Arrange
+        Guid userId = _context.Users.First().Id; // Get the existing user's ID
+        JwtMock.PrepareMockJwt(_controller, userId);
+        Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
+        ChatMessageDto dto = new ChatMessageDto
+        {
+            Text = "New chat message",
+            Timestamp = DateTime.UtcNow
+        };
+        // Mock throw exception
+        _llmService.Setup(x => x.GetChatResult(It.IsAny<string>())).Throws(new AggregateException("Mock exception"));
+
+        // Act
+        ActionResult<ChatMessageResponse> result = await _controller.PostChatMessage(chatId, dto);
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<ActionResult<ChatMessageResponse>>());
+        BadRequestObjectResult objecResult = result.Result as BadRequestObjectResult;
+        Assert.That(objecResult, Is.InstanceOf<BadRequestObjectResult>());
+    }
+
+    [Test()]
+    public async Task PostChatMessage_TestLlmException()
+    {
+        // Arrange
+        Guid userId = _context.Users.First().Id; // Get the existing user's ID
+        JwtMock.PrepareMockJwt(_controller, userId);
+        Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
+        ChatMessageDto dto = new ChatMessageDto
+        {
+            Text = "New chat message",
+            Timestamp = DateTime.UtcNow
+        };
+        // Mock throw exception
+        _llmService.Setup(x => x.GetChatResult(It.IsAny<string>())).Throws(new Exception("Mock exception"));
+
+        // Act
+        ActionResult<ChatMessageResponse> result = await _controller.PostChatMessage(chatId, dto);
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<ActionResult<ChatMessageResponse>>());
+        BadRequestObjectResult objecResult = result.Result as BadRequestObjectResult;
+        Assert.That(objecResult, Is.InstanceOf<BadRequestObjectResult>());
+    }
+
+    [Test()]
     public async Task StreamMessageAsJson_TestOk()
     {
         // Arrange
         Guid userId = _context.Users.First().Id; // Get the existing user's ID
+        JwtMock.PrepareMockJwt(_controller, userId);
+        // Create new chat with no messages
+        Guid chatId = Guid.NewGuid();
+        Chat chat = new Chat
+        {
+            Id = chatId,
+            UserId = userId, // Assign the first user's ID
+            Title = "Test Chat",
+            CreatedTime = DateTime.UtcNow,
+        };
+        _context.Chats.Add(chat);
+        await _context.SaveChangesAsync();
+        // Mock create title
+        _llmService.Setup(x => x.GetChatTitle(It.IsAny<string>())).ReturnsAsync("Fake chat title");
+        // Mock return embedding array
+        float[] fakeEmbedding = new float[1024];
+        _llmService.Setup(x => x.GetEmbedding(It.IsAny<string>())).ReturnsAsync(fakeEmbedding);
+        // Mock RAG search
+        _vectorService.Setup(x => x.TryCreateCollection(userId)).ReturnsAsync("123");
+        Dictionary<string, object> metadata = new Dictionary<string, object>
+        {
+            { "documentName", "aaa" },
+            { "chunkIndex", 1 }
+        };
+        QueryResponse fakeQ = new QueryResponse
+        {
+            Distances = new List<ICollection<float?>> { new List<float?> { 0, 1 } },  // this is null by default!
+            Ids = { new List<string> { "aa", "bb" } },  // this NOT null
+            Documents = new List<ICollection<string>> { new List<string> { "AA", "BB" } },  // this is null by default!
+            Metadatas = new List<ICollection<Dictionary<string, object>>> { new List<Dictionary<string, object>> { metadata, metadata } },  // this is null by default!
+            Embeddings = new List<ICollection<ICollection<float>>> {  },
+            Uris = null,
+            AdditionalProperties = null
+        };
+        IList<ChromaRagChunkResult> fakeResult = ChromaRagChunkResult.FromQueryResponse(fakeQ);
+        _vectorService.Setup(x => x.SearchAsync(It.IsAny<string>(), chatId, fakeEmbedding, 5, null)).ReturnsAsync(fakeResult);
+        // Mock success result
+        IAsyncEnumerable<string> streamingTexts = CreateFakeChatText();
+        _llmService.Setup(x => x.GetChatResultStreaming(chat.Messages, It.IsAny<string>(), It.IsAny<string>(), false, false, new CancellationToken())).Returns(streamingTexts);
+        // Create DTO
+        ChatMessageDto dto = new ChatMessageDto
+        {
+            Text = "New chat message",
+            Timestamp = DateTime.UtcNow,
+            UseRetrieval = true
+        };
+
+        // Act
+        await _controller.StreamMessageAsJson(chatId, dto);
+
+        // Assert
+        Assert.Pass("Stream success.");
+    }
+
+    [Test()]
+    public async Task StreamMessageAsJson_TestNoUserId()
+    {
+        // Arrange
+        Guid userId = Guid.Empty;
         JwtMock.PrepareMockJwt(_controller, userId);
         Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
         ChatMessageDto dto = new ChatMessageDto
@@ -373,7 +495,132 @@ public class ChatControllerTests
         await _controller.StreamMessageAsJson(chatId, dto);
 
         // Assert
-        Assert.Pass("Stream success.");
+        Assert.Pass("Stream success, but will return error.");
+    }
+
+    [Test()]
+    public async Task StreamMessageAsJson_TestNoChatId()
+    {
+        // Arrange
+        Guid userId = _context.Users.First().Id; // Get the existing user's ID
+        JwtMock.PrepareMockJwt(_controller, userId);
+        Guid chatId = Guid.NewGuid();
+        ChatMessageDto dto = new ChatMessageDto
+        {
+            Text = "New chat message",
+            Timestamp = DateTime.UtcNow
+        };
+
+        // Act
+        await _controller.StreamMessageAsJson(chatId, dto);
+
+        // Assert
+        Assert.Pass("Stream success, but will return error.");
+    }
+
+    [Test()]
+    public async Task StreamMessageAsJson_TestChatTitleException()
+    {
+        // Arrange
+        Guid userId = _context.Users.First().Id; // Get the existing user's ID
+        JwtMock.PrepareMockJwt(_controller, userId);
+        // Create new chat with no messages
+        Guid chatId = Guid.NewGuid();
+        Chat chat = new Chat
+        {
+            Id = chatId,
+            UserId = userId, // Assign the first user's ID
+            Title = "Test Chat",
+            CreatedTime = DateTime.UtcNow,
+        };
+        _context.Chats.Add(chat);
+        await _context.SaveChangesAsync();
+        // Mock throw exception
+        _llmService.Setup(x => x.GetChatTitle(It.IsAny<string>())).Throws(new Exception("Mock exception"));
+        // Create DTO
+        ChatMessageDto dto = new ChatMessageDto
+        {
+            Text = "New chat message",
+            Timestamp = DateTime.UtcNow
+        };        
+
+        // Act
+        await _controller.StreamMessageAsJson(chatId, dto);
+
+        // Assert
+        Assert.Pass("Stream success, but will return error.");
+    }
+
+    [Test()]
+    public async Task StreamMessageAsJson_TestRagEmbeddingException()
+    {
+        // Arrange
+        Guid userId = _context.Users.First().Id; // Get the existing user's ID
+        JwtMock.PrepareMockJwt(_controller, userId);
+        Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
+        ChatMessageDto dto = new ChatMessageDto
+        {
+            Text = "New chat message",
+            Timestamp = DateTime.UtcNow,
+            UseRetrieval = true
+        };
+        // Mock return null
+        _llmService.Setup(x => x.GetEmbedding(It.IsAny<string>())).ReturnsAsync(null as float[]);
+
+        // Act
+        await _controller.StreamMessageAsJson(chatId, dto);
+
+        // Assert
+        Assert.Pass("Stream success, but will return error.");
+    }
+
+    [Test()]
+    public async Task StreamMessageAsJson_TestRagSearchException()
+    {
+        // Arrange
+        Guid userId = _context.Users.First().Id; // Get the existing user's ID
+        JwtMock.PrepareMockJwt(_controller, userId);
+        Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
+        ChatMessageDto dto = new ChatMessageDto
+        {
+            Text = "New chat message",
+            Timestamp = DateTime.UtcNow,
+            UseRetrieval = true
+        };
+        // Mock return array
+        float[] fakeEmbedding = new float[1024];
+        _llmService.Setup(x => x.GetEmbedding(It.IsAny<string>())).ReturnsAsync(fakeEmbedding);
+        // Mock return null
+        _vectorService.Setup(x => x.SearchAsync(It.IsAny<string>(), chatId, fakeEmbedding, null, null)).ReturnsAsync(null as IList<ChromaRagChunkResult>);
+
+        // Act
+        await _controller.StreamMessageAsJson(chatId, dto);
+
+        // Assert
+        Assert.Pass("Stream success, but will return error.");
+    }
+
+    [Test()]
+    public async Task StreamMessageAsJson_TestLlmException()
+    {
+        // Arrange
+        Guid userId = _context.Users.First().Id; // Get the existing user's ID
+        JwtMock.PrepareMockJwt(_controller, userId);
+        Chat chat = _context.Chats.First();
+        Guid chatId = _context.Chats.First().Id; // Get the existing chat's ID
+        ChatMessageDto dto = new ChatMessageDto
+        {
+            Text = "New chat message",
+            Timestamp = DateTime.UtcNow,
+        };
+        // Mock throw exception
+        _llmService.Setup(x => x.GetChatResultStreaming(chat.Messages, It.IsAny<string>(), null, false, false, new CancellationToken())).Throws(new Exception("Mock exception"));
+
+        // Act
+        await _controller.StreamMessageAsJson(chatId, dto);
+
+        // Assert
+        Assert.Pass("Stream success, but will return error.");
     }
 
     [Test()]
@@ -406,5 +653,14 @@ public class ChatControllerTests
     public void TearDown()
     {
         _context.Dispose();
+    }
+
+    private async IAsyncEnumerable<string> CreateFakeChatText()
+    {
+        string text = "Hello.";
+        foreach (char c in text)
+        {
+            yield return c.ToString();
+        }
     }
 }

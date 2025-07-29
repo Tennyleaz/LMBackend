@@ -49,10 +49,10 @@ public class ModelsControllerTests
     }
 
     [Test()]
-    public async Task GetCurrentTest()
+    public async Task GetCurrent_TestOk()
     {
         // Arrange
-        _fakeDocker.Setup(s => s.GetCurrentModel()).ReturnsAsync(new LlmDocker { Model = "test/model" });
+        _fakeDocker.Setup(s => s.GetCurrentModel()).ReturnsAsync(new LlmDocker { Model = "test/model", State = "running", Status = "OK" });
 
         // Act
         var models = await _controller.GetCurrent();
@@ -62,6 +62,19 @@ public class ModelsControllerTests
         var okResult = models.Result as OkObjectResult;
         Assert.That(okResult, Is.Not.Null);
         Assert.That(okResult.Value, Is.InstanceOf(typeof(LlmDocker)));
+    }
+
+    [Test()]
+    public async Task GetCurrent_TestNotFound()
+    {
+        // Arrange
+        _fakeDocker.Setup(s => s.GetCurrentModel()).ReturnsAsync(null as LlmDocker);
+
+        // Act
+        var models = await _controller.GetCurrent();
+
+        // Assert
+        Assert.That(models.Result, Is.InstanceOf(typeof(NotFoundObjectResult)));
     }
 
     [Test()]
