@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace LMBackend.STT;
 
-public class WebSocketManager : IWebSocketManager
+public class AudioWebSocketManager : IWebSocketManager
 {
     private readonly ConcurrentDictionary<Guid, WebSocket> _sockets = new();
 

@@ -26,12 +26,13 @@ builder.Services.AddHttpClient<ISerpService, LMBackend.RAG.SerpService>(httpClie
 // DI for STT
 builder.Services.AddSingleton<ISttService, WhisperService>();
 builder.Services.AddHostedService<SttServiceInitializer>();  // To initialze whisper at startup
-builder.Services.AddSingleton<IWebSocketManager, LMBackend.STT.WebSocketManager>();
+builder.Services.AddSingleton<IWebSocketManager, AudioWebSocketManager>();
 builder.Services.AddSingleton<IAudioQueue, AudioQueue>();
 builder.Services.AddSingleton<IAudioConverter, FfmpegAudioConverter>();
 builder.Services.AddHostedService<AudioConverterService>();
 builder.Services.AddHostedService<SttProcessingService>();
 builder.Services.AddSingleton<ITtsService, TtsService>();
+builder.Services.AddSingleton<IWebSocketHandler, WebSocketHandler>();
 
 // Add services to the container.
 // Fix navigation property cycle in JSON
