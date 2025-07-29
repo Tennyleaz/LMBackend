@@ -169,7 +169,7 @@ internal class LlmClient : ILlmService
             options  = new ChatCompletionOptions
             {
                 AllowParallelToolCalls = false,
-                ToolChoice = ChatToolChoice.CreateAutoChoice(),
+                ToolChoice = ChatToolChoice.CreateRequiredChoice(),
                 Tools = { serpSearchTool }
             };
         }

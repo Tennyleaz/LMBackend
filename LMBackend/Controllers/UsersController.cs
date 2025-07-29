@@ -153,11 +153,6 @@ public class UsersController : ControllerBase
 
         return NoContent();
     }
-
-    private bool UserExists(Guid id)
-    {
-        return _context.Users.Any(e => e.Id == id);
-    }
 }
 
 public class RegisterRequest

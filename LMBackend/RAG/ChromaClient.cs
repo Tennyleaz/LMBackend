@@ -3297,7 +3297,7 @@ public partial class ChromaClient
 }
 
 
-public partial class AddCollectionRecordsPayload
+public class AddCollectionRecordsPayload
 {
 
     [JsonPropertyName("documents")]
@@ -3328,7 +3328,7 @@ public partial class AddCollectionRecordsPayload
 }
 
 
-public partial class AddCollectionRecordsResponse
+public class AddCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3343,7 +3343,7 @@ public partial class AddCollectionRecordsResponse
 }
 
 
-public partial class ChecklistResponse
+public class ChecklistResponse
 {
 
     [JsonPropertyName("max_batch_size")]
@@ -3362,7 +3362,7 @@ public partial class ChecklistResponse
 }
 
 
-public partial class Collection
+public class Collection
 {
 
     [JsonPropertyName("configuration_json")]
@@ -3409,7 +3409,7 @@ public partial class Collection
 }
 
 
-public partial class CollectionConfiguration
+public class CollectionConfiguration
 {
 
     //[JsonPropertyName("embedding_function")]
@@ -3433,7 +3433,7 @@ public partial class CollectionConfiguration
 }
 
 
-public partial class CreateCollectionPayload
+public class CreateCollectionPayload
 {
 
     [JsonPropertyName("configuration")]
@@ -3461,7 +3461,7 @@ public partial class CreateCollectionPayload
 }
 
 
-public partial class CreateDatabasePayload
+public class CreateDatabasePayload
 {
 
     [JsonPropertyName("name")]
@@ -3480,7 +3480,7 @@ public partial class CreateDatabasePayload
 }
 
 
-public partial class CreateDatabaseResponse
+public class CreateDatabaseResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3495,7 +3495,7 @@ public partial class CreateDatabaseResponse
 }
 
 
-public partial class CreateTenantPayload
+public class CreateTenantPayload
 {
 
     [JsonPropertyName("name")]
@@ -3514,7 +3514,7 @@ public partial class CreateTenantPayload
 }
 
 
-public partial class CreateTenantResponse
+public class CreateTenantResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3529,7 +3529,7 @@ public partial class CreateTenantResponse
 }
 
 
-public partial class Database
+public class Database
 {
 
     [JsonPropertyName("id")]
@@ -3556,7 +3556,7 @@ public partial class Database
 }
 
 
-public partial class DeleteCollectionRecordsPayload : RawWhereFields
+public class DeleteCollectionRecordsPayload : RawWhereFields
 {
 
     [JsonPropertyName("ids")]
@@ -3565,7 +3565,7 @@ public partial class DeleteCollectionRecordsPayload : RawWhereFields
 }
 
 
-public partial class DeleteCollectionRecordsResponse
+public class DeleteCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3580,7 +3580,7 @@ public partial class DeleteCollectionRecordsResponse
 }
 
 
-public partial class DeleteDatabaseResponse
+public class DeleteDatabaseResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3595,7 +3595,7 @@ public partial class DeleteDatabaseResponse
 }
 
 
-/*public partial class EmbeddingFunctionConfiguration
+/*public class EmbeddingFunctionConfiguration
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3610,7 +3610,7 @@ public partial class DeleteDatabaseResponse
 }
 
 
-public partial class EmbeddingFunctionNewConfiguration
+public class EmbeddingFunctionNewConfiguration
 {
 
     [JsonPropertyName("config")]
@@ -3633,7 +3633,7 @@ public partial class EmbeddingFunctionNewConfiguration
 }*/
 
 
-public partial class ErrorResponse
+public class ErrorResponse
 {
 
     [JsonPropertyName("error")]
@@ -3656,7 +3656,7 @@ public partial class ErrorResponse
 }
 
 
-public partial class ForkCollectionPayload
+public class ForkCollectionPayload
 {
 
     [JsonPropertyName("new_name")]
@@ -3675,7 +3675,7 @@ public partial class ForkCollectionPayload
 }
 
 
-public partial class GetRequestPayload : RawWhereFields
+public class GetRequestPayload : RawWhereFields
 {
 
     [JsonPropertyName("ids")]
@@ -3697,7 +3697,7 @@ public partial class GetRequestPayload : RawWhereFields
 }
 
 
-public partial class GetResponse
+public class GetResponse
 {
 
     [JsonPropertyName("documents")]
@@ -3734,7 +3734,7 @@ public partial class GetResponse
 }
 
 
-public partial class GetTenantResponse
+public class GetTenantResponse
 {
 
     [JsonPropertyName("name")]
@@ -3753,7 +3753,7 @@ public partial class GetTenantResponse
 }
 
 
-public partial class GetUserIdentityResponse
+public class GetUserIdentityResponse
 {
 
     [JsonPropertyName("databases")]
@@ -3780,13 +3780,13 @@ public partial class GetUserIdentityResponse
 }
 
 
-//public partial class HashMap : Dictionary<string, bool>
+//public class HashMap : Dictionary<string, bool>
 //{
 
 //}
 
 
-public partial class HeartbeatResponse
+public class HeartbeatResponse
 {
 
     [JsonPropertyName("nanosecond heartbeat")]
@@ -3805,7 +3805,7 @@ public partial class HeartbeatResponse
 }
 
 
-public partial class HnswConfiguration
+public class HnswConfiguration
 {
 
     [JsonPropertyName("ef_construction")]
@@ -3870,13 +3870,13 @@ public enum Include
 }
 
 
-//public partial class IncludeList : System.Collections.ObjectModel.Collection<Include>
+//public class IncludeList : System.Collections.ObjectModel.Collection<Include>
 //{
 
 //}
 
 
-public partial class QueryRequestPayload : RawWhereFields
+public class QueryRequestPayload : RawWhereFields
 {
 
     [JsonPropertyName("ids")]
@@ -3898,7 +3898,7 @@ public partial class QueryRequestPayload : RawWhereFields
 }
 
 
-public partial class QueryResponse
+public class QueryResponse
 {
 
     [JsonPropertyName("distances")]
@@ -3938,7 +3938,7 @@ public partial class QueryResponse
 }
 
 
-public partial class RawWhereFields
+public class RawWhereFields
 {
 
     [JsonPropertyName("where")]
@@ -3959,7 +3959,7 @@ public partial class RawWhereFields
 }
 
 
-public partial class SpannConfiguration
+public class SpannConfiguration
 {
 
     [JsonPropertyName("ef_construction")]
@@ -4001,7 +4001,7 @@ public partial class SpannConfiguration
 }
 
 
-public partial class UpdateCollectionConfiguration
+public class UpdateCollectionConfiguration
 {
 
     //[JsonPropertyName("embedding_function")]
@@ -4025,7 +4025,7 @@ public partial class UpdateCollectionConfiguration
 }
 
 
-public partial class UpdateCollectionPayload
+public class UpdateCollectionPayload
 {
 
     [JsonPropertyName("new_configuration")]
@@ -4049,7 +4049,7 @@ public partial class UpdateCollectionPayload
 }
 
 
-public partial class UpdateCollectionRecordsPayload
+public class UpdateCollectionRecordsPayload
 {
 
     [JsonPropertyName("documents")]
@@ -4080,7 +4080,7 @@ public partial class UpdateCollectionRecordsPayload
 }
 
 
-public partial class UpdateCollectionRecordsResponse
+public class UpdateCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -4095,7 +4095,7 @@ public partial class UpdateCollectionRecordsResponse
 }
 
 
-public partial class UpdateCollectionResponse
+public class UpdateCollectionResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -4110,7 +4110,7 @@ public partial class UpdateCollectionResponse
 }
 
 
-public partial class UpdateHnswConfiguration
+public class UpdateHnswConfiguration
 {
 
     [JsonPropertyName("batch_size")]
@@ -4139,7 +4139,7 @@ public partial class UpdateHnswConfiguration
 }
 
 
-public partial class UpsertCollectionRecordsPayload
+public class UpsertCollectionRecordsPayload
 {
 
     [JsonPropertyName("documents")]
@@ -4170,7 +4170,7 @@ public partial class UpsertCollectionRecordsPayload
 }
 
 
-public partial class UpsertCollectionRecordsResponse
+public class UpsertCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -4185,13 +4185,13 @@ public partial class UpsertCollectionRecordsResponse
 }
 
 
-//public partial class Vec : System.Collections.ObjectModel.Collection<Anonymous>
+//public class Vec : System.Collections.ObjectModel.Collection<Anonymous>
 //{
 
 //}
 
 
-//public partial class Anonymous
+//public class Anonymous
 //{
 
 //    [JsonPropertyName("configuration_json")]
@@ -4249,7 +4249,7 @@ public partial class UpsertCollectionRecordsResponse
 
 
 
-public partial class ApiException : Exception
+public class ApiException : Exception
 {
     public int StatusCode { get; private set; }
 
@@ -4271,7 +4271,7 @@ public partial class ApiException : Exception
     }
 }
 
-public partial class ApiException<TResult> : ApiException
+public class ApiException<TResult> : ApiException
 {
     public TResult Result { get; private set; }
 
