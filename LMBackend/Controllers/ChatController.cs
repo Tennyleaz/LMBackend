@@ -30,7 +30,7 @@ public class ChatController : ControllerBase
     public ChatController(ChatContext context, ILlmService llmClient, ISerpService serpService, IVectorStoreService vectorStore)
     {
         _context = context;
-        _scraper = new WebScraper();
+        _scraper = new WebScraper(new HttpClient());
         _serpService = serpService;
         _llmClient = llmClient;
         _vectorStore = vectorStore;

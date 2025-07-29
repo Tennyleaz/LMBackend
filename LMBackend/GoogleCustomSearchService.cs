@@ -9,28 +9,15 @@ internal class GoogleCustomSearchService
     private readonly string _apiKey;
     private readonly HttpClient _httpClient;
 
-    private static GoogleCustomSearchService _instance;
-    public static GoogleCustomSearchService Instance
+    public GoogleCustomSearchService(HttpClient httpClient)
     {
-        get
-        {
-            if (_instance == null)
-            {
-                string apiKey = Environment.GetEnvironmentVariable("GOOGLE_SEARCH_KEY");
-                _instance = new GoogleCustomSearchService(apiKey);
-            }
-            return _instance;
-        }
-    }
-
-    private GoogleCustomSearchService(string apiKey)
-    {
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            throw new ArgumentException("Google search API key cannot be null or empty.", nameof(apiKey));
-        }
+        string apiKey = Environment.GetEnvironmentVariable("GOOGLE_SEARCH_KEY");
+        //if (string.IsNullOrEmpty(apiKey))
+        //{
+        //    throw new ArgumentException("Google search API key cannot be null or empty.", nameof(apiKey));
+        //}
         _apiKey = apiKey;
-        _httpClient = new HttpClient();
+        _httpClient = httpClient;
     }
 
     public async Task<List<GoogleSearchResult>> SearchAsync(string query, int count = 3)

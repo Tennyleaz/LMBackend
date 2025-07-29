@@ -3,7 +3,7 @@ using Whisper.net.Logger;
 
 namespace LMBackend;
 
-public class WhisperService : ISttService, IDisposable
+internal class WhisperService : ISttService, IDisposable
 {    
     private readonly WhisperFactory whisperFactory;
     private WhisperProcessor processor;

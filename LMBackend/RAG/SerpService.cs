@@ -24,19 +24,6 @@ internal class SerpService : ISerpService
             // Find each search result from serp
             SerpResultSchema result = JsonSerializer.Deserialize<SerpResultSchema>(contentJson);
             return result;
-
-            //List<string> results = new List<string>();
-            //using JsonDocument doc = JsonDocument.Parse(contentJson);
-            //JsonElement root = doc.RootElement;
-            //foreach (JsonProperty property in root.EnumerateObject())
-            //{
-            //    if (property.Name.EndsWith("_results"))
-            //    {
-            //        string keyPair = $"{property.Name}: {property.Value.ToString()}";
-            //        results.Add(keyPair);
-            //    }
-            //}
-            //return results;
         }
         catch (Exception ex)
         {

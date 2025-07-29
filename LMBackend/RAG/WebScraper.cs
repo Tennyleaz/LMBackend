@@ -1,17 +1,12 @@
-﻿using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using static System.Net.Mime.MediaTypeNames;
-
-namespace LMBackend.RAG;
+﻿namespace LMBackend.RAG;
 
 internal class WebScraper
 {
     private readonly HttpClient _client;
 
-    public WebScraper()
+    public WebScraper(HttpClient httpClient)
     {
-        _client = new HttpClient();
+        _client = httpClient;
         _client.BaseAddress = new Uri(Constants.SCRAP_ENDPOINT);
     }
 

@@ -406,7 +406,7 @@ internal class LlmClient : ILlmService
         public string keywords { get; set; }
     }
 
-    public class StreamingChatToolCallsBuilder
+    private class StreamingChatToolCallsBuilder
     {
         private readonly Dictionary<int, string> _indexToToolCallId = [];
         private readonly Dictionary<int, string> _indexToFunctionName = [];
@@ -460,7 +460,7 @@ internal class LlmClient : ILlmService
         }
     }
 
-    public class SequenceBuilder<T>
+    private class SequenceBuilder<T>
     {
         Segment _first;
         Segment _last;
@@ -519,32 +519,32 @@ internal class LlmClient : ILlmService
             }
         }
     }
-}
 
-internal class EmbeddingResult
-{
-    public string id { get; set; }
-    public uint created { get; set; }
-    public string model { get; set; }
-    public int code { get; set; }
-    public string message { get; set; }
-    public EmbeddingData[] data { get; set; }
-}
+    private class TranscriptCorrectScheam
+    {
+        public string corrected_text { get; set; }
+        public string original_text { get; set; }
+    }
 
-internal class EmbeddingData
-{
-    public int index { get; set; }
-    public float[] embedding { get; set; }
+    private class EmbeddingResult
+    {
+        public string id { get; set; }
+        public uint created { get; set; }
+        public string model { get; set; }
+        public int code { get; set; }
+        public string message { get; set; }
+        public EmbeddingData[] data { get; set; }
+    }
+
+    private class EmbeddingData
+    {
+        public int index { get; set; }
+        public float[] embedding { get; set; }
+    }
 }
 
 public class GoogleSearchKeyword
 {
     public string keywords { get; set; }
     public bool isNeedGoogleSearch { get; set; }
-}
-
-public class TranscriptCorrectScheam
-{
-    public string corrected_text { get; set; }
-    public string original_text { get; set; }
 }
