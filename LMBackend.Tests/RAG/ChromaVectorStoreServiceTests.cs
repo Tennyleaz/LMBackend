@@ -1,11 +1,12 @@
-﻿using NUnit.Framework;
-using LMBackend.RAG;
+﻿using LMBackend.RAG.Chroma;
+using Microsoft.CodeAnalysis;
+using Moq;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Moq;
 
 namespace LMBackend.RAG.Tests;
 

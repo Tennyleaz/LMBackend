@@ -1,6 +1,7 @@
 ﻿using LMBackend;
 using LMBackend.Controllers;
 using LMBackend.Models;
+using LMBackend.RAG.Chroma;
 using LMBackend.Tests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -202,7 +203,7 @@ public class DocumentsControllerTests
         // Mock functions
         float[] fakeEmbedding = new float[1024];
         _llmService.Setup(x => x.GetEmbedding(It.IsAny<string>())).ReturnsAsync(fakeEmbedding);
-        _vectorService.Setup(x => x.UpsertAsync(It.IsAny<string>(), It.IsAny<List<RAG.ChromaChunk>>())).ReturnsAsync(true);
+        _vectorService.Setup(x => x.UpsertAsync(It.IsAny<string>(), It.IsAny<List<ChromaChunk>>())).ReturnsAsync(true);
 
         // Act
         ActionResult<Document> result = await _controller.PostDocument(dto);

@@ -1,4 +1,4 @@
-﻿namespace LMBackend.RAG;
+﻿namespace LMBackend.RAG.Chroma;
 
 public class ChromaChunk
 {

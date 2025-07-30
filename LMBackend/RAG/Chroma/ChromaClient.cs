@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 
 [assembly: InternalsVisibleTo("LMBackend.Tests")]
 
-namespace LMBackend.RAG;
+namespace LMBackend.RAG.Chroma;
 
 internal class ChromaClient : IChromaClient
 {
@@ -50,7 +50,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Get user identity</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<GetUserIdentityResponse> Get_user_identityAsync()
+    public Task<GetUserIdentityResponse> Get_user_identityAsync()
     {
         return Get_user_identityAsync(CancellationToken.None);
     }
@@ -61,7 +61,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Get user identity</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<GetUserIdentityResponse> Get_user_identityAsync(CancellationToken cancellationToken)
+    public async Task<GetUserIdentityResponse> Get_user_identityAsync(CancellationToken cancellationToken)
     {
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -144,7 +144,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Success</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<string> HealthcheckAsync()
+    public Task<string> HealthcheckAsync()
     {
         return HealthcheckAsync(CancellationToken.None);
     }
@@ -155,7 +155,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Success</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<string> HealthcheckAsync(CancellationToken cancellationToken)
+    public async Task<string> HealthcheckAsync(CancellationToken cancellationToken)
     {
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -238,7 +238,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Success</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<HeartbeatResponse> HeartbeatAsync()
+    public Task<HeartbeatResponse> HeartbeatAsync()
     {
         return HeartbeatAsync(CancellationToken.None);
     }
@@ -249,7 +249,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Success</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<HeartbeatResponse> HeartbeatAsync(CancellationToken cancellationToken)
+    public async Task<HeartbeatResponse> HeartbeatAsync(CancellationToken cancellationToken)
     {
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -332,7 +332,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Pre flight checks</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<ChecklistResponse> Pre_flight_checksAsync()
+    public Task<ChecklistResponse> Pre_flight_checksAsync()
     {
         return Pre_flight_checksAsync(CancellationToken.None);
     }
@@ -343,7 +343,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Pre flight checks</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<ChecklistResponse> Pre_flight_checksAsync(CancellationToken cancellationToken)
+    public async Task<ChecklistResponse> Pre_flight_checksAsync(CancellationToken cancellationToken)
     {
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -426,7 +426,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Reset successful</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<bool> ResetAsync()
+    public Task<bool> ResetAsync()
     {
         return ResetAsync(CancellationToken.None);
     }
@@ -437,7 +437,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Reset successful</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<bool> ResetAsync(CancellationToken cancellationToken)
+    public async Task<bool> ResetAsync(CancellationToken cancellationToken)
     {
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -528,7 +528,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Tenant created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<CreateTenantResponse> Create_tenantAsync(CreateTenantPayload body)
+    public Task<CreateTenantResponse> Create_tenantAsync(CreateTenantPayload body)
     {
         return Create_tenantAsync(body, CancellationToken.None);
     }
@@ -539,7 +539,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Tenant created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<CreateTenantResponse> Create_tenantAsync(CreateTenantPayload body, CancellationToken cancellationToken)
+    public async Task<CreateTenantResponse> Create_tenantAsync(CreateTenantPayload body, CancellationToken cancellationToken)
     {
         if (body == null)
             throw new ArgumentNullException("body");
@@ -640,7 +640,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant_name">Tenant name or ID to retrieve</param>
     /// <returns>Tenant found</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<GetTenantResponse> Get_tenantAsync(string tenant_name)
+    public Task<GetTenantResponse> Get_tenantAsync(string tenant_name)
     {
         return Get_tenantAsync(tenant_name, CancellationToken.None);
     }
@@ -652,7 +652,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant_name">Tenant name or ID to retrieve</param>
     /// <returns>Tenant found</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<GetTenantResponse> Get_tenantAsync(string tenant_name, CancellationToken cancellationToken)
+    public async Task<GetTenantResponse> Get_tenantAsync(string tenant_name, CancellationToken cancellationToken)
     {
         if (tenant_name == null)
             throw new ArgumentNullException("tenant_name");
@@ -762,7 +762,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>List of databases</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<ICollection<Database>> List_databasesAsync(string tenant, int? limit, int? offset)
+    public Task<ICollection<Database>> List_databasesAsync(string tenant, int? limit, int? offset)
     {
         return List_databasesAsync(tenant, limit, offset, CancellationToken.None);
     }
@@ -776,7 +776,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>List of databases</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<ICollection<Database>> List_databasesAsync(string tenant, int? limit, int? offset, CancellationToken cancellationToken)
+    public async Task<ICollection<Database>> List_databasesAsync(string tenant, int? limit, int? offset, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -885,7 +885,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID to associate with the new database</param>
     /// <returns>Database created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<CreateDatabaseResponse> Create_databaseAsync(string tenant, CreateDatabasePayload body)
+    public Task<CreateDatabaseResponse> Create_databaseAsync(string tenant, CreateDatabasePayload body)
     {
         return Create_databaseAsync(tenant, body, CancellationToken.None);
     }
@@ -897,7 +897,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID to associate with the new database</param>
     /// <returns>Database created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<CreateDatabaseResponse> Create_databaseAsync(string tenant, CreateDatabasePayload body, CancellationToken cancellationToken)
+    public async Task<CreateDatabaseResponse> Create_databaseAsync(string tenant, CreateDatabasePayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -1004,7 +1004,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="database">Name of the database to retrieve</param>
     /// <returns>Database retrieved successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<Database> Get_databaseAsync(string tenant, string database)
+    public Task<Database> Get_databaseAsync(string tenant, string database)
     {
         return Get_databaseAsync(tenant, database, CancellationToken.None);
     }
@@ -1017,7 +1017,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="database">Name of the database to retrieve</param>
     /// <returns>Database retrieved successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<Database> Get_databaseAsync(string tenant, string database, CancellationToken cancellationToken)
+    public async Task<Database> Get_databaseAsync(string tenant, string database, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -1131,7 +1131,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="database">Name of the database to delete</param>
     /// <returns>Database deleted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<DeleteDatabaseResponse> Delete_databaseAsync(string tenant, string database)
+    public Task<DeleteDatabaseResponse> Delete_databaseAsync(string tenant, string database)
     {
         return Delete_databaseAsync(tenant, database, CancellationToken.None);
     }
@@ -1144,7 +1144,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="database">Name of the database to delete</param>
     /// <returns>Database deleted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<DeleteDatabaseResponse> Delete_databaseAsync(string tenant, string database, CancellationToken cancellationToken)
+    public async Task<DeleteDatabaseResponse> Delete_databaseAsync(string tenant, string database, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -1260,7 +1260,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>List of collections</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<ICollection<Collection>> List_collectionsAsync(string tenant, string database, int? limit, int? offset)
+    public Task<ICollection<Collection>> List_collectionsAsync(string tenant, string database, int? limit, int? offset)
     {
         return List_collectionsAsync(tenant, database, limit, offset, CancellationToken.None);
     }
@@ -1275,7 +1275,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>List of collections</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<ICollection<Collection>> List_collectionsAsync(string tenant, string database, int? limit, int? offset, CancellationToken cancellationToken)
+    public async Task<ICollection<Collection>> List_collectionsAsync(string tenant, string database, int? limit, int? offset, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -1390,7 +1390,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="database">Database name containing the new collection</param>
     /// <returns>Collection created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<Collection> Create_collectionAsync(string tenant, string database, CreateCollectionPayload body)
+    public Task<Collection> Create_collectionAsync(string tenant, string database, CreateCollectionPayload body)
     {
         return Create_collectionAsync(tenant, database, body, CancellationToken.None);
     }
@@ -1403,7 +1403,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="database">Database name containing the new collection</param>
     /// <returns>Collection created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<Collection> Create_collectionAsync(string tenant, string database, CreateCollectionPayload body, CancellationToken cancellationToken)
+    public async Task<Collection> Create_collectionAsync(string tenant, string database, CreateCollectionPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -1516,7 +1516,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">UUID of the collection</param>
     /// <returns>Collection found</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<Collection> Get_collectionAsync(string tenant, string database, string collection_id)
+    public Task<Collection> Get_collectionAsync(string tenant, string database, string collection_id)
     {
         return Get_collectionAsync(tenant, database, collection_id, CancellationToken.None);
     }
@@ -1530,7 +1530,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">UUID of the collection</param>
     /// <returns>Collection found</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<Collection> Get_collectionAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
+    public async Task<Collection> Get_collectionAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -1650,7 +1650,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">UUID of the collection to update</param>
     /// <returns>Collection updated successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<UpdateCollectionResponse> Update_collectionAsync(string tenant, string database, string collection_id, UpdateCollectionPayload body)
+    public Task<UpdateCollectionResponse> Update_collectionAsync(string tenant, string database, string collection_id, UpdateCollectionPayload body)
     {
         return Update_collectionAsync(tenant, database, collection_id, body, CancellationToken.None);
     }
@@ -1664,7 +1664,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">UUID of the collection to update</param>
     /// <returns>Collection updated successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<UpdateCollectionResponse> Update_collectionAsync(string tenant, string database, string collection_id, UpdateCollectionPayload body, CancellationToken cancellationToken)
+    public async Task<UpdateCollectionResponse> Update_collectionAsync(string tenant, string database, string collection_id, UpdateCollectionPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -1791,7 +1791,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">UUID of the collection to delete</param>
     /// <returns>Collection deleted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<UpdateCollectionResponse> Delete_collectionAsync(string tenant, string database, string collection_id)
+    public Task<UpdateCollectionResponse> Delete_collectionAsync(string tenant, string database, string collection_id)
     {
         return Delete_collectionAsync(tenant, database, collection_id, CancellationToken.None);
     }
@@ -1805,7 +1805,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">UUID of the collection to delete</param>
     /// <returns>Collection deleted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<UpdateCollectionResponse> Delete_collectionAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
+    public async Task<UpdateCollectionResponse> Delete_collectionAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -1922,7 +1922,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Collection added successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<AddCollectionRecordsResponse> Collection_addAsync(string tenant, string database, string collection_id, AddCollectionRecordsPayload body)
+    public Task<AddCollectionRecordsResponse> Collection_addAsync(string tenant, string database, string collection_id, AddCollectionRecordsPayload body)
     {
         return Collection_addAsync(tenant, database, collection_id, body, CancellationToken.None);
     }
@@ -1933,7 +1933,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Collection added successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<AddCollectionRecordsResponse> Collection_addAsync(string tenant, string database, string collection_id, AddCollectionRecordsPayload body, CancellationToken cancellationToken)
+    public async Task<AddCollectionRecordsResponse> Collection_addAsync(string tenant, string database, string collection_id, AddCollectionRecordsPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -2037,7 +2037,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID whose records are counted</param>
     /// <returns>Number of records in the collection</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<int> Collection_countAsync(string tenant, string database, string collection_id)
+    public Task<int> Collection_countAsync(string tenant, string database, string collection_id)
     {
         return Collection_countAsync(tenant, database, collection_id, CancellationToken.None);
     }
@@ -2051,7 +2051,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID whose records are counted</param>
     /// <returns>Number of records in the collection</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<int> Collection_countAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
+    public async Task<int> Collection_countAsync(string tenant, string database, string collection_id, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -2168,7 +2168,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID</param>
     /// <returns>Records deleted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<DeleteCollectionRecordsResponse> Collection_deleteAsync(string tenant, string database, string collection_id, DeleteCollectionRecordsPayload body)
+    public Task<DeleteCollectionRecordsResponse> Collection_deleteAsync(string tenant, string database, string collection_id, DeleteCollectionRecordsPayload body)
     {
         return Collection_deleteAsync(tenant, database, collection_id, body, CancellationToken.None);
     }
@@ -2182,7 +2182,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID</param>
     /// <returns>Records deleted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<DeleteCollectionRecordsResponse> Collection_deleteAsync(string tenant, string database, string collection_id, DeleteCollectionRecordsPayload body, CancellationToken cancellationToken)
+    public async Task<DeleteCollectionRecordsResponse> Collection_deleteAsync(string tenant, string database, string collection_id, DeleteCollectionRecordsPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -2310,7 +2310,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">UUID of the collection to update</param>
     /// <returns>Collection forked successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<Collection> Fork_collectionAsync(string tenant, string database, string collection_id, ForkCollectionPayload body)
+    public Task<Collection> Fork_collectionAsync(string tenant, string database, string collection_id, ForkCollectionPayload body)
     {
         return Fork_collectionAsync(tenant, database, collection_id, body, CancellationToken.None);
     }
@@ -2324,7 +2324,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">UUID of the collection to update</param>
     /// <returns>Collection forked successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<Collection> Fork_collectionAsync(string tenant, string database, string collection_id, ForkCollectionPayload body, CancellationToken cancellationToken)
+    public async Task<Collection> Fork_collectionAsync(string tenant, string database, string collection_id, ForkCollectionPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -2452,7 +2452,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID to fetch records from</param>
     /// <returns>Records retrieved from the collection</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<GetResponse> Collection_getAsync(string tenant, string database, string collection_id, GetRequestPayload body)
+    public Task<GetResponse> Collection_getAsync(string tenant, string database, string collection_id, GetRequestPayload body)
     {
         return Collection_getAsync(tenant, database, collection_id, body, CancellationToken.None);
     }
@@ -2466,7 +2466,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID to fetch records from</param>
     /// <returns>Records retrieved from the collection</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<GetResponse> Collection_getAsync(string tenant, string database, string collection_id, GetRequestPayload body, CancellationToken cancellationToken)
+    public async Task<GetResponse> Collection_getAsync(string tenant, string database, string collection_id, GetRequestPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -2596,7 +2596,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>Records matching the query</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<QueryResponse> Collection_queryAsync(string tenant, string database, string collection_id, int? limit, int? offset, QueryRequestPayload body)
+    public Task<QueryResponse> Collection_queryAsync(string tenant, string database, string collection_id, int? limit, int? offset, QueryRequestPayload body)
     {
         return Collection_queryAsync(tenant, database, collection_id, limit, offset, body, CancellationToken.None);
     }
@@ -2612,7 +2612,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="offset">Offset for pagination</param>
     /// <returns>Records matching the query</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<QueryResponse> Collection_queryAsync(string tenant, string database, string collection_id, int? limit, int? offset, QueryRequestPayload body, CancellationToken cancellationToken)
+    public async Task<QueryResponse> Collection_queryAsync(string tenant, string database, string collection_id, int? limit, int? offset, QueryRequestPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -2747,7 +2747,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Collection updated successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<UpdateCollectionRecordsResponse> Collection_updateAsync(string tenant, string database, string collection_id, UpdateCollectionRecordsPayload body)
+    public Task<UpdateCollectionRecordsResponse> Collection_updateAsync(string tenant, string database, string collection_id, UpdateCollectionRecordsPayload body)
     {
         return Collection_updateAsync(tenant, database, collection_id, body, CancellationToken.None);
     }
@@ -2758,7 +2758,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Collection updated successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<UpdateCollectionRecordsResponse> Collection_updateAsync(string tenant, string database, string collection_id, UpdateCollectionRecordsPayload body, CancellationToken cancellationToken)
+    public async Task<UpdateCollectionRecordsResponse> Collection_updateAsync(string tenant, string database, string collection_id, UpdateCollectionRecordsPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -2862,7 +2862,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID</param>
     /// <returns>Records upserted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<UpsertCollectionRecordsResponse> Collection_upsertAsync(string tenant, string database, string collection_id, UpsertCollectionRecordsPayload body)
+    public Task<UpsertCollectionRecordsResponse> Collection_upsertAsync(string tenant, string database, string collection_id, UpsertCollectionRecordsPayload body)
     {
         return Collection_upsertAsync(tenant, database, collection_id, body, CancellationToken.None);
     }
@@ -2876,7 +2876,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID</param>
     /// <returns>Records upserted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<UpsertCollectionRecordsResponse> Collection_upsertAsync(string tenant, string database, string collection_id, UpsertCollectionRecordsPayload body, CancellationToken cancellationToken)
+    public async Task<UpsertCollectionRecordsResponse> Collection_upsertAsync(string tenant, string database, string collection_id, UpsertCollectionRecordsPayload body, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -3003,7 +3003,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="database">Database name to count collections from</param>
     /// <returns>Count of collections</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<int> Count_collectionsAsync(string tenant, string database)
+    public Task<int> Count_collectionsAsync(string tenant, string database)
     {
         return Count_collectionsAsync(tenant, database, CancellationToken.None);
     }
@@ -3016,7 +3016,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="database">Database name to count collections from</param>
     /// <returns>Count of collections</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<int> Count_collectionsAsync(string tenant, string database, CancellationToken cancellationToken)
+    public async Task<int> Count_collectionsAsync(string tenant, string database, CancellationToken cancellationToken)
     {
         if (tenant == null)
             throw new ArgumentNullException("tenant");
@@ -3115,7 +3115,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Get server version</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual Task<string> VersionAsync()
+    public Task<string> VersionAsync()
     {
         return VersionAsync(CancellationToken.None);
     }
@@ -3126,7 +3126,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <returns>Get server version</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
-    public virtual async Task<string> VersionAsync(CancellationToken cancellationToken)
+    public async Task<string> VersionAsync(CancellationToken cancellationToken)
     {
         var client_ = _httpClient;
         var disposeClient_ = false;
@@ -3320,30 +3320,16 @@ internal class AddCollectionRecordsPayload
     [JsonPropertyName("uris")]
     public ICollection<string> Uris { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
 internal class AddCollectionRecordsResponse
 {
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3354,15 +3340,8 @@ internal class ChecklistResponse
     [System.ComponentModel.DataAnnotations.Range(0, int.MaxValue)]
     public int Max_batch_size { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3401,15 +3380,8 @@ public class Collection
     [JsonPropertyName("version")]
     public int Version { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3425,15 +3397,8 @@ public class CollectionConfiguration
     [JsonPropertyName("spann")]
     public SpannConfiguration Spann { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3453,15 +3418,8 @@ public class CreateCollectionPayload
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
     public string Name { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3472,30 +3430,16 @@ public class CreateDatabasePayload
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
     public string Name { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
 public class CreateDatabaseResponse
 {
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3506,30 +3450,15 @@ internal class CreateTenantPayload
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
     public string Name { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
 internal class CreateTenantResponse
 {
-
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3548,15 +3477,8 @@ public class Database
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
     public string Tenant { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3571,31 +3493,15 @@ public class DeleteCollectionRecordsPayload : RawWhereFields
 
 public class DeleteCollectionRecordsResponse
 {
-
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
 internal class DeleteDatabaseResponse
 {
-
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3648,15 +3554,7 @@ internal class ErrorResponse
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
     public string Message { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
-    [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3667,15 +3565,7 @@ internal class ForkCollectionPayload
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
     public string New_name { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
-    [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3726,15 +3616,7 @@ internal class GetResponse
     [JsonPropertyName("uris")]
     public ICollection<string> Uris { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
-    [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3745,15 +3627,7 @@ internal class GetTenantResponse
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
     public string Name { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
-    [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3772,15 +3646,7 @@ internal class GetUserIdentityResponse
     [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
     public string User_id { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
-    [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3797,15 +3663,7 @@ internal class HeartbeatResponse
     [System.ComponentModel.DataAnnotations.Range(0, int.MaxValue)]
     public int Nanosecond_heartbeat { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
-    [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3930,15 +3788,8 @@ public class QueryResponse
     [JsonPropertyName("uris")]
     public ICollection<ICollection<string>> Uris { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -3951,15 +3802,8 @@ public class RawWhereFields
     [JsonPropertyName("where_document")]
     public object Where_document { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -4017,15 +3861,8 @@ internal class UpdateCollectionConfiguration
     [JsonPropertyName("spann")]
     public SpannConfiguration Spann { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -4041,15 +3878,8 @@ internal class UpdateCollectionPayload
     [JsonPropertyName("new_name")]
     public string New_name { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -4072,45 +3902,24 @@ internal class UpdateCollectionRecordsPayload
     [JsonPropertyName("uris")]
     public ICollection<string> Uris { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
 internal class UpdateCollectionRecordsResponse
 {
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
 internal class UpdateCollectionResponse
 {
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
@@ -4162,30 +3971,15 @@ public class UpsertCollectionRecordsPayload
     [JsonPropertyName("uris")]
     public ICollection<string> Uris { get; set; }
 
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 
 public class UpsertCollectionRecordsResponse
 {
-
-    private IDictionary<string, object> _additionalProperties;
-
     [JsonExtensionData]
-    public IDictionary<string, object> AdditionalProperties
-    {
-        get { return _additionalProperties ?? (_additionalProperties = new Dictionary<string, object>()); }
-        set { _additionalProperties = value; }
-    }
-
+    public IDictionary<string, object> AdditionalProperties { get; set; }
 }
 
 

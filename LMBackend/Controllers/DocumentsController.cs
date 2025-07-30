@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Asp.Versioning;
 using LMBackend.RAG;
+using LMBackend.RAG.Chroma;
 
 namespace LMBackend.Controllers;
 

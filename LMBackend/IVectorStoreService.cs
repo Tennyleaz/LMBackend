@@ -1,4 +1,5 @@
 ﻿using LMBackend.RAG;
+using LMBackend.RAG.Chroma;
 
 namespace LMBackend;
 

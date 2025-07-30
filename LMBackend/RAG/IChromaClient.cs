@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using LMBackend.RAG.Chroma;
+using System.Runtime.CompilerServices;
 
 namespace LMBackend.RAG;
 

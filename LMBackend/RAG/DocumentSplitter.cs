@@ -6,7 +6,7 @@ using Xceed.Words.NET;
 
 namespace LMBackend.RAG;
 
-public static class DocumentSplitter
+internal static class DocumentSplitter
 {
     public static List<string> GetLines(string name, byte[] data)
     {

@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Asp.Versioning;
 using Asp.Versioning.Conventions;
+using LMBackend.RAG.Chroma;
 
 // This let us test internal classes in other project
 [assembly: InternalsVisibleTo("LMBackend.Tests")]
@@ -22,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add my dependencies
 builder.Services.AddSingleton<IDockerHelper, DockerHelper>();
 builder.Services.AddSingleton<ILlmService, LlmClient>();
-builder.Services.AddSingleton<IChromaClient, LMBackend.RAG.ChromaClient>();
+builder.Services.AddSingleton<IChromaClient, ChromaClient>();
 builder.Services.AddSingleton<IVectorStoreService, LMBackend.RAG.ChromaVectorStoreService>();
 builder.Services.AddSingleton<ISerpService, LMBackend.RAG.SerpService>();
 builder.Services.AddHttpClient<ISerpService, LMBackend.RAG.SerpService>(httpClient =>

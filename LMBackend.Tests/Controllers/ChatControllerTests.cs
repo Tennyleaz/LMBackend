@@ -1,5 +1,6 @@
 ﻿using LMBackend.Models;
 using LMBackend.RAG;
+using LMBackend.RAG.Chroma;
 using LMBackend.Tests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -660,6 +661,7 @@ public class ChatControllerTests
         string text = "Hello.";
         foreach (char c in text)
         {
+            await Task.Delay(10);
             yield return c.ToString();
         }
     }
