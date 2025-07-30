@@ -8,10 +8,14 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using Asp.Versioning;
 using Asp.Versioning.Conventions;
+
+// This let us test internal classes in other project
+[assembly: InternalsVisibleTo("LMBackend.Tests")]
 
 var builder = WebApplication.CreateBuilder(args);
 

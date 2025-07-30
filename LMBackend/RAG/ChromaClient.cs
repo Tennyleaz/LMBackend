@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
+[assembly: InternalsVisibleTo("LMBackend.Tests")]
 
 namespace LMBackend.RAG;
 
@@ -3363,7 +3366,7 @@ internal class ChecklistResponse
 }
 
 
-internal class Collection
+public class Collection
 {
 
     [JsonPropertyName("configuration_json")]
@@ -3410,7 +3413,7 @@ internal class Collection
 }
 
 
-internal class CollectionConfiguration
+public class CollectionConfiguration
 {
 
     //[JsonPropertyName("embedding_function")]
@@ -3434,7 +3437,7 @@ internal class CollectionConfiguration
 }
 
 
-internal class CreateCollectionPayload
+public class CreateCollectionPayload
 {
 
     [JsonPropertyName("configuration")]
@@ -3462,7 +3465,7 @@ internal class CreateCollectionPayload
 }
 
 
-internal class CreateDatabasePayload
+public class CreateDatabasePayload
 {
 
     [JsonPropertyName("name")]
@@ -3481,7 +3484,7 @@ internal class CreateDatabasePayload
 }
 
 
-internal class CreateDatabaseResponse
+public class CreateDatabaseResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3530,7 +3533,7 @@ internal class CreateTenantResponse
 }
 
 
-internal class Database
+public class Database
 {
 
     [JsonPropertyName("id")]
@@ -3557,7 +3560,7 @@ internal class Database
 }
 
 
-internal class DeleteCollectionRecordsPayload : RawWhereFields
+public class DeleteCollectionRecordsPayload : RawWhereFields
 {
 
     [JsonPropertyName("ids")]
@@ -3566,7 +3569,7 @@ internal class DeleteCollectionRecordsPayload : RawWhereFields
 }
 
 
-internal class DeleteCollectionRecordsResponse
+public class DeleteCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
@@ -3806,7 +3809,7 @@ internal class HeartbeatResponse
 }
 
 
-internal class HnswConfiguration
+public class HnswConfiguration
 {
 
     [JsonPropertyName("ef_construction")]
@@ -3877,7 +3880,7 @@ public enum Include
 //}
 
 
-internal class QueryRequestPayload : RawWhereFields
+public class QueryRequestPayload : RawWhereFields
 {
 
     [JsonPropertyName("ids")]
@@ -3939,7 +3942,7 @@ public class QueryResponse
 }
 
 
-internal class RawWhereFields
+public class RawWhereFields
 {
 
     [JsonPropertyName("where")]
@@ -3960,7 +3963,7 @@ internal class RawWhereFields
 }
 
 
-internal class SpannConfiguration
+public class SpannConfiguration
 {
 
     [JsonPropertyName("ef_construction")]
@@ -4140,7 +4143,7 @@ internal class UpdateHnswConfiguration
 }
 
 
-internal class UpsertCollectionRecordsPayload
+public class UpsertCollectionRecordsPayload
 {
 
     [JsonPropertyName("documents")]
@@ -4171,7 +4174,7 @@ internal class UpsertCollectionRecordsPayload
 }
 
 
-internal class UpsertCollectionRecordsResponse
+public class UpsertCollectionRecordsResponse
 {
 
     private IDictionary<string, object> _additionalProperties;
