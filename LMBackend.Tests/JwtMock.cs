@@ -26,5 +26,21 @@ namespace LMBackend.Tests
 
             controller.ControllerContext = controllerContext;
         }
+
+        internal static void PrepareWrongJwt(ControllerBase controller, string wrongUserId)
+        {
+            // Prepare middleware
+            var controllerContext = new ControllerContext();
+            var httpContext = new DefaultHttpContext();
+            controllerContext.HttpContext = httpContext;
+
+            // Mock the User object to return a valid userId in JWT subject
+            httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
+            {
+                new Claim("sub", wrongUserId)
+            }));
+
+            controller.ControllerContext = controllerContext;
+        }
     }
 }

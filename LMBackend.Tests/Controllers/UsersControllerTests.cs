@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace LMBackend.Controllers.Tests;
 
@@ -145,7 +144,7 @@ public class UsersControllerTests
     }
 
     [Test()]
-    public async Task GetUserTest()
+    public async Task GetUser_TestOk()
     {
         // Arrange
         var userId = _context.Users.First().Id; // Get the existing user's ID
@@ -187,6 +186,19 @@ public class UsersControllerTests
         }));
 
         _controller.ControllerContext = controllerContext;
+
+        // Act
+        var result = await _controller.GetMe();
+
+        // Assert
+        Assert.That(result.Result, Is.InstanceOf(typeof(UnauthorizedResult)));
+    }
+
+    [Test]
+    public async Task GetMe_ShouldReturnUnauthorized_WrongIdFormat()
+    {
+        // Arrange
+        JwtMock.PrepareWrongJwt(_controller, "nothing");
 
         // Act
         var result = await _controller.GetMe();
