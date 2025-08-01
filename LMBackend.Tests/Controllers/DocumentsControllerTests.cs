@@ -37,7 +37,7 @@ public class DocumentsControllerTests
         // Seed data into the InMemory database
         Guid userId = Guid.NewGuid();
         _context.Users.Add(new User { Id = userId, Name = "Test User" });
-        _context.Documents.Add(new Document { ChatId = Guid.Empty, UserId = userId, Id = Guid.NewGuid(), CreatedTime = DateTime.UtcNow, Name = "Test doc" });
+        _context.Documents.Add(new Document { ChatId = Guid.Empty, UserId = userId, User = null, Id = Guid.NewGuid(), CreatedTime = DateTime.UtcNow, Name = "Test doc" });
         _context.SaveChanges();
 
         // Setup mock config, so JWT will not fail

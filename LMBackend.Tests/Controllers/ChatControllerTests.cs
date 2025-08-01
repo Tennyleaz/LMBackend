@@ -41,6 +41,7 @@ public class ChatControllerTests
             UserId = userId, // Assign the first user's ID
             Title = "Test Chat",
             CreatedTime = DateTime.UtcNow,
+            User = null,
         };
         _context.Chats.Add(chat);
         ChatMessage message = new ChatMessage
@@ -51,6 +52,7 @@ public class ChatControllerTests
             Model = "test/model",
             Role = Role.User,
             Timestamp = DateTime.UtcNow,
+            Chat = null,
         };
         _context.ChatMessages.Add(message);
         _context.SaveChanges();
