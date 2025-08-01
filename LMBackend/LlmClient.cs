@@ -174,6 +174,9 @@ internal class LlmClient : ILlmService
                 ToolChoice = ChatToolChoice.CreateAutoChoice(),
                 Tools = { serpSearchTool }
             };
+            // see:
+            // https://github.com/vllm-project/vllm/pull/14054
+            // must use "auto", "require" has issue.
         }
         else
         {
