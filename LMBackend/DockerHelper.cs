@@ -267,7 +267,7 @@ internal class DockerHelper : IDockerHelper
 
             }
             // Wait 1s before next try
-            await Task.Delay(1000);
+            //await Task.Delay(1000);
         }
 
         return ready;
