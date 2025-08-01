@@ -15,6 +15,7 @@ namespace LMBackend;
 internal class LlmClient : ILlmService
 {
     private ChatClient _client;
+    private string lastModelName;
     private readonly HttpClient _httpClient;
     private readonly IDockerHelper _dockerHelper;
     private readonly ISerpService _serpService;
@@ -34,7 +35,7 @@ internal class LlmClient : ILlmService
     private async Task TryCreateChatClient()
     {
         string model = await _dockerHelper.GetCurrentModelName();
-        if (_client == null)
+        if (_client == null || lastModelName != model)
         {
             _client = new ChatClient(
                 options: new OpenAIClientOptions()
@@ -44,6 +45,7 @@ internal class LlmClient : ILlmService
                 model: model,
                 credential: new ApiKeyCredential(Constants.LLM_KEY)
             );
+            lastModelName = model;
         }
 
         if (serpSearchTool == null)
@@ -169,7 +171,7 @@ internal class LlmClient : ILlmService
             options  = new ChatCompletionOptions
             {
                 AllowParallelToolCalls = false,
-                ToolChoice = ChatToolChoice.CreateRequiredChoice(),
+                ToolChoice = ChatToolChoice.CreateAutoChoice(),
                 Tools = { serpSearchTool }
             };
         }
