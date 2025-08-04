@@ -10,8 +10,11 @@ public class TtsService : ITtsService
     private readonly HttpClient _httpClient;
 
     public TtsService()
-    {
-        _audioDirectory = @"C:\temp audio\TTS";
+    {        
+        if (Environment.OSVersion.Platform == PlatformID.Unix)
+            _audioDirectory = "/app/temp audio/TTS";
+        else
+            _audioDirectory = @"C:\temp audio\TTS";
         _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri(Constants.TTS_ENDPOINT);
         Directory.CreateDirectory(_audioDirectory);

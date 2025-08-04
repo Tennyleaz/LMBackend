@@ -11,7 +11,16 @@ internal class WhisperService : ISttService, IDisposable
     public WhisperService()
     {
         using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
-        whisperFactory = WhisperFactory.FromPath("C:\\whisper models\\ggml-base.bin");
+        string modelPath = null;
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            modelPath = "C:\\whisper models\\ggml-base.bin";  // On windows PC.
+        }
+        else if (Environment.OSVersion.Platform == PlatformID.Unix)
+        {
+            modelPath = "/app/models/ggml-base.bin";  // Need to mount this volume in docker!
+        }
+        whisperFactory = WhisperFactory.FromPath(modelPath);
     }
 
     public void BuildProcessor()

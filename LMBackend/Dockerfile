@@ -13,10 +13,22 @@ COPY . ./
 # Build and publish a release
 RUN dotnet publish -c Release -o /app/publish
 
+# Define where the model will be mounted in the container.
+RUN mkdir -p /app/models
+RUN mkdir -p "/app/temp audio"
+
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:6c4df091e4e531bb93bdbfe7e7f0998e7ced344f54426b7e874116a3dc3233ff
+
 # Only /app will be in build image
 WORKDIR /app
 EXPOSE 8080
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    rm -rf /var/lib/apt/lists/*  # Clean up to reduce the image size
+
+# Copy and run
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "LMBackend.dll"]

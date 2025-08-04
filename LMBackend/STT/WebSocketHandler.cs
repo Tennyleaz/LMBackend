@@ -19,7 +19,11 @@ internal class WebSocketHandler : IWebSocketHandler
     {
         using MemoryStream bufferStream = new MemoryStream();
         byte[] buffer = new byte[8192];
-        string chunkDir = @"C:\temp audio";
+        string chunkDir;
+        if (Environment.OSVersion.Platform == PlatformID.Unix)
+            chunkDir = "/app/temp audio";
+        else
+            chunkDir = @"C:\temp audio";
         Directory.CreateDirectory(chunkDir);
         bool isStopped = false;
         bool isPaused = false;
