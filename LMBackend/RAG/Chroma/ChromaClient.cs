@@ -13,10 +13,7 @@ namespace LMBackend.RAG.Chroma;
 internal class ChromaClient : IChromaClient
 {
     private string _baseUrl;
-
     private HttpClient _httpClient;
-    private static Lazy<JsonSerializerOptions> _settings = new Lazy<JsonSerializerOptions>(CreateSerializerSettings, true);
-    private JsonSerializerOptions _instanceSettings;
 
     public ChromaClient(HttpClient httpClient)
     {
@@ -25,6 +22,7 @@ internal class ChromaClient : IChromaClient
             ? baseUrl
             : baseUrl + "/";
         _httpClient = httpClient;
+        JsonSerializerSettings = CreateSerializerSettings();
     }
 
     private static JsonSerializerOptions CreateSerializerSettings()
@@ -33,13 +31,10 @@ internal class ChromaClient : IChromaClient
         {
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
         };
-        //UpdateJsonSerializerSettings(settings);
         return settings;
     }
 
-    protected JsonSerializerOptions JsonSerializerSettings { get { return _instanceSettings ?? _settings.Value; } }
-
-    //static partial void UpdateJsonSerializerSettings(JsonSerializerOptions settings);
+    protected JsonSerializerOptions JsonSerializerSettings { get; private set; }
 
     //partial void PrepareRequest(HttpClient client, HttpRequestMessage request, string url);
     //partial void PrepareRequest(HttpClient client, HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
@@ -537,6 +532,7 @@ internal class ChromaClient : IChromaClient
     /// <summary>
     /// Creates a new tenant.
     /// </summary>
+    /// <param name="body"></param>
     /// <returns>Tenant created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<CreateTenantResponse> Create_tenantAsync(CreateTenantPayload body, CancellationToken cancellationToken)
@@ -883,6 +879,7 @@ internal class ChromaClient : IChromaClient
     /// Creates a new database for a given tenant.
     /// </summary>
     /// <param name="tenant">Tenant ID to associate with the new database</param>
+    /// <param name="body"></param>
     /// <returns>Database created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public Task<CreateDatabaseResponse> Create_databaseAsync(string tenant, CreateDatabasePayload body)
@@ -895,6 +892,7 @@ internal class ChromaClient : IChromaClient
     /// Creates a new database for a given tenant.
     /// </summary>
     /// <param name="tenant">Tenant ID to associate with the new database</param>
+    /// <param name="body"></param>
     /// <returns>Database created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<CreateDatabaseResponse> Create_databaseAsync(string tenant, CreateDatabasePayload body, CancellationToken cancellationToken)
@@ -1388,6 +1386,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name containing the new collection</param>
+    /// <param name="body"></param>
     /// <returns>Collection created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public Task<Collection> Create_collectionAsync(string tenant, string database, CreateCollectionPayload body)
@@ -1401,6 +1400,7 @@ internal class ChromaClient : IChromaClient
     /// </summary>
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name containing the new collection</param>
+    /// <param name="body"></param>
     /// <returns>Collection created successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<Collection> Create_collectionAsync(string tenant, string database, CreateCollectionPayload body, CancellationToken cancellationToken)
@@ -1648,6 +1648,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name</param>
     /// <param name="collection_id">UUID of the collection to update</param>
+    /// <param name="body"></param>
     /// <returns>Collection updated successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public Task<UpdateCollectionResponse> Update_collectionAsync(string tenant, string database, string collection_id, UpdateCollectionPayload body)
@@ -1662,6 +1663,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name</param>
     /// <param name="collection_id">UUID of the collection to update</param>
+    /// <param name="body"></param>
     /// <returns>Collection updated successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<UpdateCollectionResponse> Update_collectionAsync(string tenant, string database, string collection_id, UpdateCollectionPayload body, CancellationToken cancellationToken)
@@ -1931,6 +1933,10 @@ internal class ChromaClient : IChromaClient
     /// <summary>
     /// Adds records to a collection.
     /// </summary>
+    /// <param name="tenant"></param>
+    /// <param name="database"></param>
+    /// <param name="collection_id"></param>
+    /// <param name="body"></param>
     /// <returns>Collection added successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<AddCollectionRecordsResponse> Collection_addAsync(string tenant, string database, string collection_id, AddCollectionRecordsPayload body, CancellationToken cancellationToken)
@@ -2166,6 +2172,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name</param>
     /// <param name="collection_id">Collection ID</param>
+    /// <param name="body"></param>
     /// <returns>Records deleted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public Task<DeleteCollectionRecordsResponse> Collection_deleteAsync(string tenant, string database, string collection_id, DeleteCollectionRecordsPayload body)
@@ -2180,6 +2187,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name</param>
     /// <param name="collection_id">Collection ID</param>
+    /// <param name="body"></param>
     /// <returns>Records deleted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<DeleteCollectionRecordsResponse> Collection_deleteAsync(string tenant, string database, string collection_id, DeleteCollectionRecordsPayload body, CancellationToken cancellationToken)
@@ -2308,6 +2316,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name</param>
     /// <param name="collection_id">UUID of the collection to update</param>
+    /// <param name="body"></param>
     /// <returns>Collection forked successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public Task<Collection> Fork_collectionAsync(string tenant, string database, string collection_id, ForkCollectionPayload body)
@@ -2322,6 +2331,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name</param>
     /// <param name="collection_id">UUID of the collection to update</param>
+    /// <param name="body"></param>
     /// <returns>Collection forked successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<Collection> Fork_collectionAsync(string tenant, string database, string collection_id, ForkCollectionPayload body, CancellationToken cancellationToken)
@@ -2450,6 +2460,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name for the collection</param>
     /// <param name="collection_id">Collection ID to fetch records from</param>
+    /// <param name="body"></param>
     /// <returns>Records retrieved from the collection</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public Task<GetResponse> Collection_getAsync(string tenant, string database, string collection_id, GetRequestPayload body)
@@ -2464,6 +2475,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name for the collection</param>
     /// <param name="collection_id">Collection ID to fetch records from</param>
+    /// <param name="body"></param>
     /// <returns>Records retrieved from the collection</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<GetResponse> Collection_getAsync(string tenant, string database, string collection_id, GetRequestPayload body, CancellationToken cancellationToken)
@@ -2594,6 +2606,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID to query</param>
     /// <param name="limit">Limit for pagination</param>
     /// <param name="offset">Offset for pagination</param>
+    /// <param name="body"></param>
     /// <returns>Records matching the query</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public Task<QueryResponse> Collection_queryAsync(string tenant, string database, string collection_id, int? limit, int? offset, QueryRequestPayload body)
@@ -2610,6 +2623,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="collection_id">Collection ID to query</param>
     /// <param name="limit">Limit for pagination</param>
     /// <param name="offset">Offset for pagination</param>
+    /// <param name="body"></param>
     /// <returns>Records matching the query</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<QueryResponse> Collection_queryAsync(string tenant, string database, string collection_id, int? limit, int? offset, QueryRequestPayload body, CancellationToken cancellationToken)
@@ -2756,6 +2770,10 @@ internal class ChromaClient : IChromaClient
     /// <summary>
     /// Updates records in a collection by ID.
     /// </summary>
+    /// <param name="tenant"></param>
+    /// <param name="database"></param>
+    /// <param name="collection_id"></param>
+    /// <param name="body"></param>
     /// <returns>Collection updated successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<UpdateCollectionRecordsResponse> Collection_updateAsync(string tenant, string database, string collection_id, UpdateCollectionRecordsPayload body, CancellationToken cancellationToken)
@@ -2860,6 +2878,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name</param>
     /// <param name="collection_id">Collection ID</param>
+    /// <param name="body"></param>
     /// <returns>Records upserted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public Task<UpsertCollectionRecordsResponse> Collection_upsertAsync(string tenant, string database, string collection_id, UpsertCollectionRecordsPayload body)
@@ -2874,6 +2893,7 @@ internal class ChromaClient : IChromaClient
     /// <param name="tenant">Tenant ID</param>
     /// <param name="database">Database name</param>
     /// <param name="collection_id">Collection ID</param>
+    /// <param name="body"></param>
     /// <returns>Records upserted successfully</returns>
     /// <exception cref="ApiException">A server side error occurred.</exception>
     public async Task<UpsertCollectionRecordsResponse> Collection_upsertAsync(string tenant, string database, string collection_id, UpsertCollectionRecordsPayload body, CancellationToken cancellationToken)
