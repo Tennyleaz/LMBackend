@@ -1,4 +1,5 @@
 ﻿using Whisper.net;
+using Whisper.net.LibraryLoader;
 using Whisper.net.Logger;
 
 namespace LMBackend;
@@ -10,7 +11,7 @@ internal class WhisperService : ISttService, IDisposable
 
     public WhisperService()
     {
-        using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
+        using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Warning);
         string modelPath = null;
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)
         {
@@ -20,6 +21,8 @@ internal class WhisperService : ISttService, IDisposable
         {
             modelPath = "/app/models/ggml-base.bin";  // Need to mount this volume in docker!
         }
+        // Set runtime order
+        RuntimeOptions.RuntimeLibraryOrder = [RuntimeLibrary.Cuda, RuntimeLibrary.Vulkan, RuntimeLibrary.Cpu];
         whisperFactory = WhisperFactory.FromPath(modelPath);
     }
 
