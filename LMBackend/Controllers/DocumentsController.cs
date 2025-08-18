@@ -135,4 +135,51 @@ public class DocumentsController : Controller
         await _context.SaveChangesAsync();
         return NoContent();
     }
+
+    [HttpPost("query")]
+    [Authorize]
+    public async Task<ActionResult<List<DocumentSearchResponse>>> QueryAsync(DocumentSearchRequest request)
+    {
+        // Get userId from JWT claims
+        Guid userId = User.GetUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+        // Check if it's a valid user
+        User user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return NotFound("No user in database: " + userId);
+        }
+
+        // Generate embedding for user query
+        float[] embedding = await _llmClient.GetEmbedding(request.Query);
+        if (embedding == null)
+        {
+            return BadRequest("Failed to generate embedding from query.");
+        }
+
+        string collectionId = await _vectorStore.TryCreateCollection(userId);
+        // Save embedding to ChromaDB
+        IList<ChromaRagChunkResult> chunkResult = await _vectorStore.SearchAsync(collectionId, Guid.Empty, embedding, request.TopK, null);
+        if (chunkResult == null)
+        {
+            return BadRequest("Failed to search chroma DB");
+        }
+
+        List<DocumentSearchResponse> results = new List<DocumentSearchResponse>();
+        foreach (var ccr in chunkResult)
+        {
+            results.Add(new DocumentSearchResponse
+            {
+                Id = ccr.Id,
+                Document = ccr.Document,
+                Metadata = ccr.Metadata,
+                Distance = ccr.Distance
+            });
+        }
+
+        return results;
+    }
 }
