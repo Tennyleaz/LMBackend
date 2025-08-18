@@ -137,21 +137,22 @@ public class DocumentsController : Controller
     }
 
     [HttpPost("query")]
-    [Authorize]
+    //[Authorize]
     public async Task<ActionResult<List<DocumentSearchResponse>>> QueryAsync(DocumentSearchRequest request)
     {
         // Get userId from JWT claims
-        Guid userId = User.GetUserId();
-        if (userId == Guid.Empty)
-        {
-            return Unauthorized();
-        }
-        // Check if it's a valid user
-        User user = await _context.Users.FindAsync(userId);
-        if (user == null)
-        {
-            return NotFound("No user in database: " + userId);
-        }
+        //Guid userId = User.GetUserId();
+        //if (userId == Guid.Empty)
+        //{
+        //    return Unauthorized();
+        //}
+        //// Check if it's a valid user
+        //User user = await _context.Users.FindAsync(userId);
+        //if (user == null)
+        //{
+        //    return NotFound("No user in database: " + userId);
+        //}
+        Guid userId = Guid.Empty;
 
         // Generate embedding for user query
         float[] embedding = await _llmClient.GetEmbedding(request.Query);
