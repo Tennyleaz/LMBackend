@@ -105,10 +105,15 @@ public class DocumentsController : Controller
         }
 
         // Save document to SQL
-        _context.Documents.Add(newDoc);
-        await _context.SaveChangesAsync();
+        if (userId != Guid.Empty)
+        {
+            _context.Documents.Add(newDoc);
+            await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetDocument), new { id = newDoc.Id }, newDoc);
+            return CreatedAtAction(nameof(GetDocument), new { id = newDoc.Id }, newDoc);
+        }
+        // Fake document if no user id
+        return Ok(newDoc);
     }
 
     /// <summary>
