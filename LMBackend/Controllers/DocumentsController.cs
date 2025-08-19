@@ -43,7 +43,7 @@ public class DocumentsController : Controller
     /// Get a document by id.
     /// </summary>
     [HttpGet("{id}")]
-    [Authorize]
+    //[Authorize]
     public async Task<ActionResult<Document>> GetDocument(Guid id)
     {
         Document item = await _context.Documents.FindAsync(id);
@@ -58,21 +58,22 @@ public class DocumentsController : Controller
     /// Create a document and generate embeddings.
     /// </summary>
     [HttpPost]
-    [Authorize]
+    //[Authorize]
     public async Task<ActionResult<Document>> PostDocument(DocumentDto documentDto)
     {
         // Get userId from JWT claims
         Guid userId = User.GetUserId();
-        if (userId == Guid.Empty)
-        {
-            return Unauthorized();
-        }
-        // Check if it's a valid user
-        User user = await _context.Users.FindAsync(userId);
-        if (user == null)
-        {
-            return NotFound("No user in database: " + userId);
-        }
+        //if (userId == Guid.Empty)
+        //{
+        //    return Unauthorized();
+        //}
+        //// Check if it's a valid user
+        //User user = await _context.Users.FindAsync(userId);
+        //if (user == null)
+        //{
+        //    return NotFound("No user in database: " + userId);
+        //}
+        //userId = Guid.Empty;
 
         // Get document data
         Document newDoc = Document.FromDto(documentDto, userId);
@@ -141,7 +142,7 @@ public class DocumentsController : Controller
     public async Task<ActionResult<List<DocumentSearchResponse>>> QueryAsync(DocumentSearchRequest request)
     {
         // Get userId from JWT claims
-        //Guid userId = User.GetUserId();
+        Guid userId = User.GetUserId();
         //if (userId == Guid.Empty)
         //{
         //    return Unauthorized();
@@ -152,7 +153,6 @@ public class DocumentsController : Controller
         //{
         //    return NotFound("No user in database: " + userId);
         //}
-        Guid userId = Guid.Empty;
 
         // Generate embedding for user query
         float[] embedding = await _llmClient.GetEmbedding(request.Query);
