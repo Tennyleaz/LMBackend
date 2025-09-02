@@ -131,6 +131,10 @@ internal class ChromaVectorStoreService : IVectorStoreService
         if (string.IsNullOrEmpty(collectionId))
             return null;
 
+        // Check parameters
+        if (topK.HasValue && topK.Value <= 0)
+            topK = null;
+
         // Prepare query
         var payload = new QueryRequestPayload
         {

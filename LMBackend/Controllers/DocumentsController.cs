@@ -55,6 +55,65 @@ public class DocumentsController : Controller
     }
 
     /// <summary>
+    /// Insert chunks into chromadb. Will not create new document.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("chunks")]
+    public async Task<ActionResult<Document>> PostDocumentChunks(DocumentChunkDto request)
+    {
+        // Get userId from JWT claims
+        Guid userId = User.GetUserId();
+
+        // Create fake document
+        Document newDoc = new Document()
+        {
+            ChatId = Guid.Empty,
+            UserId = userId,
+            CreatedTime = DateTime.Now,
+            Id = Guid.NewGuid(),
+            Name = request.Name
+        };
+
+        // Call embedding API for each chunk
+        List <ChromaChunk> chromaChunks = new List<ChromaChunk>();
+        for (int i = 0; i < request.Chunks.Count; i++)
+        {
+            float[] embedding = await _llmClient.GetEmbedding(request.Chunks[i]);
+            if (embedding == null || embedding.Length == 0)
+            {
+                continue;
+            }
+            chromaChunks.Add(new ChromaChunk(userId, newDoc.ChatId, newDoc.Id, newDoc.Name, i, request.Chunks[i], embedding));
+        }
+
+        // Create database and collection if not exist
+        string collectionId = await _vectorStore.TryCreateCollection(userId);
+        if (collectionId == null)
+        {
+            return StatusCode(500, "Failed to create chromadb collection");
+        }
+
+        // Save embedding to ChromaDB
+        bool success = await _vectorStore.UpsertAsync(collectionId, chromaChunks);
+        if (!success)
+        {
+            return StatusCode(500, "Failed to upsert chromadb");
+        }
+
+        // Save document to SQL
+        if (userId != Guid.Empty)
+        {
+            _context.Documents.Add(newDoc);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetDocument), new { id = newDoc.Id }, newDoc);
+        }
+        // Fake document if no user id
+        return Ok(newDoc);
+    }
+
+    /// <summary>
     /// Create a document and generate embeddings.
     /// </summary>
     [HttpPost]
@@ -97,6 +156,11 @@ public class DocumentsController : Controller
         // Create database and collection if not exist
         //await _chromaService.TryCreateDatabaseForUser();
         string collectionId = await _vectorStore.TryCreateCollection(userId);
+        if (collectionId == null)
+        {
+            return StatusCode(500, "Failed to create chromadb collection");
+        }
+
         // Save embedding to ChromaDB
         bool success = await _vectorStore.UpsertAsync(collectionId, chromaChunks);
         if (!success)
@@ -142,6 +206,11 @@ public class DocumentsController : Controller
         return NoContent();
     }
 
+    /// <summary>
+    /// Directly query chromadb for chunks.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     [HttpPost("query")]
     //[Authorize]
     public async Task<ActionResult<List<DocumentSearchResponse>>> QueryAsync(DocumentSearchRequest request)
