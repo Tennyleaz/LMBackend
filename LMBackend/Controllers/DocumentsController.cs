@@ -64,6 +64,10 @@ public class DocumentsController : Controller
     {
         // Debug log
         Console.WriteLine($"PostDocumentChunks request: Name={request.Name}, Chunks count={request.Chunks?.Count}.");
+        if (request.Chunks == null || request.Chunks.Count == 0)
+        {
+            return StatusCode(500, "Chunks are null or empty!");
+        }
 
         // Get userId from JWT claims
         Guid userId = User.GetUserId();
@@ -97,11 +101,36 @@ public class DocumentsController : Controller
             return StatusCode(500, "Failed to create chromadb collection");
         }
 
-        // Save embedding to ChromaDB
-        bool success = await _vectorStore.UpsertAsync(collectionId, chromaChunks);
-        if (!success)
+        // Save embedding to ChromaDB, split into chunks of 200 each
+        int index, count = 0;
+        bool success;
+        List <ChromaChunk> tempChunk = new List<ChromaChunk>();
+        for (index = 0; index < chromaChunks.Count; index++)
         {
-            return StatusCode(500, "Failed to upsert chromadb");
+            tempChunk.Add(chromaChunks[index]);
+            count++;
+
+            if (count >= 200)
+            {
+                // upsert once
+                success = await _vectorStore.UpsertAsync(collectionId, tempChunk);
+                if (!success)
+                {
+                    return StatusCode(500, "Failed to upsert chromadb");
+                }
+                // clear for next batch
+                tempChunk.Clear();
+                count = 0;
+            }
+        }
+        // upsert last chunk
+        if (tempChunk.Count > 0)
+        {
+            success = await _vectorStore.UpsertAsync(collectionId, tempChunk);
+            if (!success)
+            {
+                return StatusCode(500, "Failed to upsert chromadb");
+            }
         }
 
         // Save document to SQL
