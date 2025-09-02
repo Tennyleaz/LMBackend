@@ -62,6 +62,9 @@ public class DocumentsController : Controller
     [HttpPost("chunks")]
     public async Task<ActionResult<Document>> PostDocumentChunks(DocumentChunkDto request)
     {
+        // Debug log
+        Console.WriteLine($"PostDocumentChunks request: Name={request.Name}, Chunks count={request.Chunks?.Count}.");
+
         // Get userId from JWT claims
         Guid userId = User.GetUserId();
 
@@ -79,12 +82,12 @@ public class DocumentsController : Controller
         List <ChromaChunk> chromaChunks = new List<ChromaChunk>();
         for (int i = 0; i < request.Chunks.Count; i++)
         {
-            float[] embedding = await _llmClient.GetEmbedding(request.Chunks[i]);
+            float[] embedding = await _llmClient.GetEmbedding(request.Chunks[i].ToString());
             if (embedding == null || embedding.Length == 0)
             {
                 continue;
             }
-            chromaChunks.Add(new ChromaChunk(userId, newDoc.ChatId, newDoc.Id, newDoc.Name, i, request.Chunks[i], embedding));
+            chromaChunks.Add(new ChromaChunk(userId, newDoc.ChatId, newDoc.Id, newDoc.Name, i, request.Chunks[i].ToString(), embedding));
         }
 
         // Create database and collection if not exist
