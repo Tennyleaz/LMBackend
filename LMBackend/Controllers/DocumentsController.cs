@@ -82,18 +82,6 @@ public class DocumentsController : Controller
             Name = request.Name
         };
 
-        // Call embedding API for each chunk
-        List <ChromaChunk> chromaChunks = new List<ChromaChunk>();
-        for (int i = 0; i < request.Chunks.Count; i++)
-        {
-            float[] embedding = await _llmClient.GetEmbedding(request.Chunks[i].ToString());
-            if (embedding == null || embedding.Length == 0)
-            {
-                continue;
-            }
-            chromaChunks.Add(new ChromaChunk(userId, newDoc.ChatId, newDoc.Id, newDoc.Name, i, request.Chunks[i].ToString(), embedding));
-        }
-
         // Create database and collection if not exist
         string collectionId = await _vectorStore.TryCreateCollection(userId);
         if (collectionId == null)
@@ -101,36 +89,16 @@ public class DocumentsController : Controller
             return StatusCode(500, "Failed to create chromadb collection");
         }
 
-        // Save embedding to ChromaDB, split into chunks of 200 each
-        int index, count = 0;
-        bool success;
-        List <ChromaChunk> tempChunk = new List<ChromaChunk>();
-        for (index = 0; index < chromaChunks.Count; index++)
+        // Call embedding API for each chunk
+        List<ChromaChunk> chromaChunks;
+        try
         {
-            tempChunk.Add(chromaChunks[index]);
-            count++;
-
-            if (count >= 200)
-            {
-                // upsert once
-                success = await _vectorStore.UpsertAsync(collectionId, tempChunk);
-                if (!success)
-                {
-                    return StatusCode(500, "Failed to upsert chromadb");
-                }
-                // clear for next batch
-                tempChunk.Clear();
-                count = 0;
-            }
+            IEnumerable<string> chunks = request.Chunks.Select(x => x.ToString());
+            chromaChunks = await GetEmbeddingsAndUpsert(userId, collectionId, chunks, newDoc);
         }
-        // upsert last chunk
-        if (tempChunk.Count > 0)
+        catch (Exception ex)
         {
-            success = await _vectorStore.UpsertAsync(collectionId, tempChunk);
-            if (!success)
-            {
-                return StatusCode(500, "Failed to upsert chromadb");
-            }
+            return StatusCode(500, ex.Message);
         }
 
         // Save document to SQL
@@ -166,25 +134,6 @@ public class DocumentsController : Controller
         //}
         //userId = Guid.Empty;
 
-        // Get document data
-        Document newDoc = Document.FromDto(documentDto, userId);
-        List<string> lines = DocumentSplitter.GetLines(newDoc.Name, documentDto.Data);
-
-        // Split documents into chunks
-        List<string> documentChunks = DocumentSplitter.SplitTextByWords(lines);
-
-        // Call embedding API for each chunk
-        List<ChromaChunk> chromaChunks = new List<ChromaChunk>();
-        for (int i=0; i< documentChunks.Count; i++)
-        {
-            float[] embedding = await _llmClient.GetEmbedding(documentChunks[i]);
-            if (embedding == null || embedding.Length == 0)
-            {
-                continue;
-            }
-            chromaChunks.Add(new ChromaChunk(userId, newDoc.ChatId, newDoc.Id, newDoc.Name, i, documentChunks[i], embedding));
-        }
-
         // Create database and collection if not exist
         //await _chromaService.TryCreateDatabaseForUser();
         string collectionId = await _vectorStore.TryCreateCollection(userId);
@@ -193,11 +142,21 @@ public class DocumentsController : Controller
             return StatusCode(500, "Failed to create chromadb collection");
         }
 
-        // Save embedding to ChromaDB
-        bool success = await _vectorStore.UpsertAsync(collectionId, chromaChunks);
-        if (!success)
+        // Get document data
+        Document newDoc = Document.FromDto(documentDto, userId);
+        List<string> lines = DocumentSplitter.GetLines(newDoc.Name, documentDto.Data);
+
+        // Split documents into chunks
+        List<string> documentChunks = DocumentSplitter.SplitTextByWords(lines);
+
+        // Call embedding API for each chunk
+        try
         {
-            return StatusCode(500, "Failed to upsert chromadb");
+            List<ChromaChunk> chromaChunks = await GetEmbeddingsAndUpsert(userId, collectionId, documentChunks, newDoc);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
         }
 
         // Save document to SQL
@@ -210,6 +169,57 @@ public class DocumentsController : Controller
         }
         // Fake document if no user id
         return Ok(newDoc);
+    }
+
+    private async Task<List<ChromaChunk>> GetEmbeddingsAndUpsert(Guid userId, string collectionId, IEnumerable<string> chunks, Document newDoc)
+    {
+        // Call embedding API for each chunk
+        int index = 0, count = 0;
+        List<ChromaChunk> chromaChunks = new List<ChromaChunk>();
+        foreach (string chunkText in chunks)
+        {
+            float[] embedding = await _llmClient.GetEmbedding(chunkText);
+            if (embedding == null || embedding.Length == 0)
+            {
+                throw new Exception("Failed to get embeddings");
+            }
+            chromaChunks.Add(new ChromaChunk(userId, newDoc.ChatId, newDoc.Id, newDoc.Name, index, chunkText, embedding));
+            index++;
+        }
+
+        // Save embedding to ChromaDB, split into chunks of 200 each
+        index = count = 0;
+        bool success;
+        List<ChromaChunk> tempChunk = new List<ChromaChunk>();
+        for (index = 0; index < chromaChunks.Count; index++)
+        {
+            tempChunk.Add(chromaChunks[index]);
+            count++;
+
+            if (count >= 200)
+            {
+                // upsert once
+                success = await _vectorStore.UpsertAsync(collectionId, tempChunk);
+                if (!success)
+                {
+                    throw new Exception("Failed to upsert chromadb");
+                }
+                // clear for next batch
+                tempChunk.Clear();
+                count = 0;
+            }
+        }
+        // upsert last chunk
+        if (tempChunk.Count > 0)
+        {
+            success = await _vectorStore.UpsertAsync(collectionId, tempChunk);
+            if (!success)
+            {
+                throw new Exception("Failed to upsert chromadb");
+            }
+        }
+
+        return chromaChunks;
     }
 
     /// <summary>
