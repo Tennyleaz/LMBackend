@@ -1,4 +1,6 @@
-﻿namespace LMBackend.RAG.Chroma;
+﻿using LMBackend.Models;
+
+namespace LMBackend.RAG.Chroma;
 
 public class ChromaChunk
 {
@@ -20,5 +22,21 @@ public class ChromaChunk
         Metadata.Add("documentId", documentId.ToString());
         Metadata.Add("chunkIndex", documentIndex);
         Metadata.Add("documentName", documentName);
+    }
+
+    /// <summary>
+    /// Constructor for MCP server
+    /// </summary>
+    public ChromaChunk(McpServerChunkDto dto, string rawJson, float[] embedding)
+    {
+        // name the id from user + chat + doc
+        //Id = $"{userId}_{chatId}_{documentId}_{documentIndex}";
+        Id = Guid.NewGuid().ToString();
+        Document = rawJson;
+        Embedding = embedding;
+        Metadata = new Dictionary<string, object>();
+        Metadata.Add("mcpServerName", dto.ServerName);
+        Metadata.Add("mcpServerType", dto.Type);
+        Metadata.Add("mcpServerSource", dto.Source);
     }
 }

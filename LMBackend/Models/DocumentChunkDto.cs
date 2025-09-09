@@ -19,7 +19,7 @@ public class DocuemtChunkItem
     /// </summary>
     public string Name { get; set; }
     /// <summary>
-    /// Category of the MCP tool
+    /// Category of the MCP tool (could be null)
     /// </summary>
     public string Category { get; set; }
     /// <summary>
@@ -29,6 +29,8 @@ public class DocuemtChunkItem
 
     public override string ToString()
     {
+        if (string.IsNullOrEmpty(Category))
+            return $"name: {Name},\ndescription: {Description}";
         return $"name: {Name},\ncategory: {Category}\n, description: {Description}";
     }
 }

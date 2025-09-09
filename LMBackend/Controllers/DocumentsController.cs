@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Asp.Versioning;
 using LMBackend.RAG;
 using LMBackend.RAG.Chroma;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace LMBackend.Controllers;
 
@@ -114,6 +116,69 @@ public class DocumentsController : Controller
     }
 
     /// <summary>
+    /// Insert list of MCP servers into chromadb. Will not create new document.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("mcpServerChunk")]
+    public async Task<ActionResult> PostMcpServerChunks(List<McpServerChunkDto> request)
+    {
+        // Debug log
+        Console.WriteLine($"PostMcpServerChunks chunks count={request.Count}.");
+        if (request.Count == 0)
+        {
+            return StatusCode(500, "Chunks are null or empty!");
+        }
+
+        // Get userId from JWT claims
+        Guid userId = User.GetUserId();
+
+        // Create database and collection if not exist
+        string collectionId = await _vectorStore.TryCreateCollection(userId);
+        if (collectionId == null)
+        {
+            return StatusCode(500, "Failed to create chromadb collection");
+        }
+
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        try
+        {
+            // Call embedding API for each chunk
+            List<ChromaChunk> chromaChunks = new List<ChromaChunk>();
+            foreach (McpServerChunkDto dto in request)
+            {
+                // Skip MCP server with no tools
+                if (dto.Tools == null || dto.Tools.Count == 0)
+                    continue;
+
+                string chunkText = dto.ToString();
+                float[] embedding = await _llmClient.GetEmbedding(chunkText);
+                if (embedding == null || embedding.Length == 0)
+                {
+                    throw new Exception("Failed to get embeddings");
+                }
+
+                string rawJson = JsonSerializer.Serialize(dto, options);
+                ChromaChunk oneChunk = new ChromaChunk(dto, rawJson, embedding);
+                chromaChunks.Add(oneChunk);
+            }
+
+            // Save embedding to ChromaDB, split into chunks of 200 each
+            await BatchUpsertChunks(collectionId, chromaChunks);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+
+        return Ok();
+    }
+
+    /// <summary>
     /// Create a document and generate embeddings.
     /// </summary>
     [HttpPost]
@@ -188,7 +253,15 @@ public class DocumentsController : Controller
         }
 
         // Save embedding to ChromaDB, split into chunks of 200 each
-        index = count = 0;
+        await BatchUpsertChunks(collectionId, chromaChunks);
+
+        return chromaChunks;
+    }
+
+    private async Task BatchUpsertChunks(string collectionId, List<ChromaChunk> chromaChunks)
+    {
+        // Save embedding to ChromaDB, split into chunks of 200 each
+        int index = 0, count = 0;
         bool success;
         List<ChromaChunk> tempChunk = new List<ChromaChunk>();
         for (index = 0; index < chromaChunks.Count; index++)
@@ -218,8 +291,6 @@ public class DocumentsController : Controller
                 throw new Exception("Failed to upsert chromadb");
             }
         }
-
-        return chromaChunks;
     }
 
     /// <summary>

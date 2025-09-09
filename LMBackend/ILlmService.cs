@@ -10,4 +10,5 @@ public interface ILlmService
     public Task<string> SummarizeWebpage(string html, string query);
     public Task<string> CorrectSpeechResult(string text);
     public Task<float[]> GetEmbedding(string text);
+    public Task<IEnumerable<float[]>> GetEmbeddingBatch(string[] text);
 }

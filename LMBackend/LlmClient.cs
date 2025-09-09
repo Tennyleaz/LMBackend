@@ -406,6 +406,40 @@ internal class LlmClient : ILlmService
         }
     }
 
+    public async Task<IEnumerable<float[]>> GetEmbeddingBatch(string[] text)
+    {
+        if (text == null || text.Length == 0)
+        {
+            return null;
+        }
+
+        var payload = new
+        {
+            model = "Qwen/Qwen3-Embedding-0.6B",
+            input = text,
+            user = "tenny"
+        };
+
+        try
+        {
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/v1/embeddings", payload);
+            // "{"object":"error","message":"The model does not support Embeddings API","type":"BadRequestError","param":null,"code":400}"
+            // "{"id":"embd-e46f57901d0b48a8951e1099df8375c7","object":"list","created":1752660182,"model":"Qwen/Qwen3-Embedding-0.6B","data":[{"index":0,"object":"embedding","embedding":[...]}]}
+            EmbeddingResult result = await response.Content.ReadFromJsonAsync<EmbeddingResult>();
+            if (result.code == 200 || result.code == 0)
+            {
+                return result.data.Select(x => x.embedding);
+            }
+            Console.WriteLine("Error embed text: " + result.message);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error embed text: " + ex);
+            return null;
+        }
+    }
+
     private class SerpParam
     {
         public string keywords { get; set; }
@@ -538,7 +572,7 @@ internal class LlmClient : ILlmService
         public string model { get; set; }
         public int code { get; set; }
         public string message { get; set; }
-        public EmbeddingData[] data { get; set; }
+        public List<EmbeddingData> data { get; set; }
     }
 
     private class EmbeddingData
