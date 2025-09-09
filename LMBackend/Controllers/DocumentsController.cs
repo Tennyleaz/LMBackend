@@ -18,6 +18,8 @@ public class DocumentsController : Controller
     private readonly ChatContext _context;
     private readonly ILlmService _llmClient;
     private readonly IVectorStoreService _vectorStore;
+    private static readonly Guid MCP_SERVER_ID = new Guid("{343F7B40-EED8-4A8C-84FF-019C2CBA5EE3}");
+
 
     public DocumentsController(ChatContext context, ILlmService llmService, IVectorStoreService vectorStore)
     {
@@ -130,11 +132,8 @@ public class DocumentsController : Controller
             return StatusCode(500, "Chunks are null or empty!");
         }
 
-        // Get userId from JWT claims
-        Guid userId = User.GetUserId();
-
         // Create database and collection if not exist
-        string collectionId = await _vectorStore.TryCreateCollection(userId);
+        string collectionId = await _vectorStore.TryCreateCollection(MCP_SERVER_ID);
         if (collectionId == null)
         {
             return StatusCode(500, "Failed to create chromadb collection");
@@ -369,5 +368,44 @@ public class DocumentsController : Controller
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Query chromadb for MCP server.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("queryMcpServer")]
+    //[Authorize]
+    public async Task<ActionResult<List<DocumentSearchResponse>>> QueryMcpServerAsync(DocumentSearchRequest request)
+    {
+        // Generate embedding for user query
+        float[] embedding = await _llmClient.GetEmbedding(request.Query);
+        if (embedding == null)
+        {
+            return BadRequest("Failed to generate embedding from query.");
+        }
+
+        string collectionId = await _vectorStore.TryCreateCollection(MCP_SERVER_ID);
+        // Save embedding to ChromaDB
+        IList<ChromaRagChunkResult> chunkResult = await _vectorStore.SearchAsync(collectionId, Guid.Empty, embedding, request.TopK, null);
+        if (chunkResult == null)
+        {
+            return BadRequest("Failed to search chroma DB");
+        }
+
+        List<DocumentSearchResponse> results = new List<DocumentSearchResponse>();
+        foreach (var ccr in chunkResult)
+        {
+            results.Add(new DocumentSearchResponse
+            {
+                Id = ccr.Id,
+                Document = ccr.Document,
+                Metadata = ccr.Metadata,
+                Distance = ccr.Distance
+            });
+        }
+
+        return Ok(results);
     }
 }
