@@ -169,4 +169,7 @@ var webSocketOptions = new WebSocketOptions
 };
 app.UseWebSockets(webSocketOptions);
 
+// Serve static files in wwwroot
+app.UseStaticFiles();
+
 app.Run();
