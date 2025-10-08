@@ -5,6 +5,7 @@ using LMBackend.STT;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
@@ -170,6 +171,17 @@ var webSocketOptions = new WebSocketOptions
 app.UseWebSockets(webSocketOptions);
 
 // Serve static files in wwwroot
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ServeUnknownFileTypes = true,
+    DefaultContentType = "application/octet-stream",
+    ContentTypeProvider = new FileExtensionContentTypeProvider
+    {
+        Mappings =
+        {
+            [".signature"] = "text/plain" // or whatever MIME type you want
+        }
+    }
+});
 
 app.Run();
