@@ -39,4 +39,18 @@ public class ChromaChunk
         Metadata.Add("mcpServerType", dto.Type);
         Metadata.Add("mcpServerSource", dto.Source);
     }
+
+    /// <summary>
+    /// Constructor for MCP server
+    /// </summary>
+    public ChromaChunk(McpRegistryChunkDto dto, string rawJson, float[] embedding)
+    {
+        // name the id from user + chat + doc
+        //Id = $"{userId}_{chatId}_{documentId}_{documentIndex}";
+        Id = Guid.NewGuid().ToString();
+        Document = rawJson;
+        Embedding = embedding;
+        Metadata = new Dictionary<string, object>();
+        Metadata.Add("name", dto.Name);
+    }
 }

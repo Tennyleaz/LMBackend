@@ -194,4 +194,25 @@ internal class ChromaVectorStoreService : IVectorStoreService
             return false;
         }
     }
+
+    public async Task<bool> ClearCollectionAsync(string collectionId)
+    {
+        if (string.IsNullOrEmpty(collectionId))
+            return false;
+
+        try
+        {
+            // Find records from document id in metadata
+            DeleteCollectionRecordsResponse deleteResponse = await _chromaClient.Collection_deleteAsync(TENANT, DATABASE, collectionId, new DeleteCollectionRecordsPayload
+            {
+                Ids = null  // Important! Empty array returns nothing!
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Delete collection error: " + ex.Message);
+            return false;
+        }
+    }
 }

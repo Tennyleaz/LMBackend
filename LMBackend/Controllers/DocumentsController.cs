@@ -19,6 +19,7 @@ public class DocumentsController : Controller
     private readonly ILlmService _llmClient;
     private readonly IVectorStoreService _vectorStore;
     private static readonly Guid MCP_SERVER_ID = new Guid("{343F7B40-EED8-4A8C-84FF-019C2CBA5EE3}");
+    private static readonly Guid MCP_REGISTRY_ID = new Guid("{2EF4DAEB-15DB-4A1B-B0DF-A9289B310DF6}");
 
 
     public DocumentsController(ChatContext context, ILlmService llmService, IVectorStoreService vectorStore)
@@ -152,6 +153,66 @@ public class DocumentsController : Controller
             {
                 // Skip MCP server with no tools
                 if (dto.Tools == null || dto.Tools.Count == 0)
+                    continue;
+
+                string chunkText = dto.ToString();
+                float[] embedding = await _llmClient.GetEmbedding(chunkText);
+                if (embedding == null || embedding.Length == 0)
+                {
+                    throw new Exception("Failed to get embeddings");
+                }
+
+                string rawJson = JsonSerializer.Serialize(dto, options);
+                ChromaChunk oneChunk = new ChromaChunk(dto, rawJson, embedding);
+                chromaChunks.Add(oneChunk);
+            }
+
+            // Save embedding to ChromaDB, split into chunks of 200 each
+            await BatchUpsertChunks(collectionId, chromaChunks);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Insert list of MCP servers from McpRegistry into chromadb. Will not create new document.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("mcpRegistryChunk")]
+    public async Task<ActionResult> PostMcpRegistryChunks(List<McpRegistryChunkDto> request)
+    {
+        // Debug log
+        Console.WriteLine($"PostMcpServerChunks chunks count={request.Count}.");
+        if (request.Count == 0)
+        {
+            return StatusCode(500, "Chunks are null or empty!");
+        }
+
+        // Create database and collection if not exist
+        string collectionId = await _vectorStore.TryCreateCollection(MCP_REGISTRY_ID);
+        if (collectionId == null)
+        {
+            return StatusCode(500, "Failed to create chromadb collection");
+        }
+
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        try
+        {
+            // Call embedding API for each chunk
+            List<ChromaChunk> chromaChunks = new List<ChromaChunk>();
+            foreach (McpRegistryChunkDto dto in request)
+            {
+                // Skip MCP server with no title and description
+                if (string.IsNullOrWhiteSpace(dto.Description) && string.IsNullOrWhiteSpace(dto.Title))
                     continue;
 
                 string chunkText = dto.ToString();
@@ -407,5 +468,65 @@ public class DocumentsController : Controller
         }
 
         return Ok(results);
+    }
+
+    /// <summary>
+    /// Query chromadb for McpRegistry.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("queryMcpRegistry")]
+    public async Task<ActionResult<List<DocumentSearchResponse>>> QueryMcpRegistryAsync(DocumentSearchRequest request)
+    {
+        // Generate embedding for user query
+        float[] embedding = await _llmClient.GetEmbedding(request.Query);
+        if (embedding == null)
+        {
+            return BadRequest("Failed to generate embedding from query.");
+        }
+
+        string collectionId = await _vectorStore.TryCreateCollection(MCP_REGISTRY_ID);
+        // Save embedding to ChromaDB
+        IList<ChromaRagChunkResult> chunkResult = await _vectorStore.SearchAsync(collectionId, Guid.Empty, embedding, request.TopK, null);
+        if (chunkResult == null)
+        {
+            return BadRequest("Failed to search chroma DB");
+        }
+
+        List<DocumentSearchResponse> results = new List<DocumentSearchResponse>();
+        foreach (var ccr in chunkResult)
+        {
+            results.Add(new DocumentSearchResponse
+            {
+                Id = ccr.Id,
+                Document = ccr.Document,
+                Metadata = ccr.Metadata,
+                Distance = ccr.Distance
+            });
+        }
+
+        return Ok(results);
+    }
+
+    /// <summary>
+    /// Clear the chroma db collection for McpRegistry chunks.
+    /// </summary>
+    /// <returns></returns>
+    [HttpDelete("mcpRegistry")]
+    public async Task<ActionResult> ClearMcpRegistryChunks()
+    {
+        string collectionId = await _vectorStore.TryCreateCollection(MCP_REGISTRY_ID);
+        if (!string.IsNullOrEmpty(collectionId))
+        {
+            bool result = await _vectorStore.ClearCollectionAsync(collectionId);
+            if (result)
+            {
+                return NoContent();
+            }
+
+            return BadRequest("Failed to delete collection id=" + collectionId);
+        }
+
+        return NotFound("Cannot find DB for McpRegistry.");
     }
 }
