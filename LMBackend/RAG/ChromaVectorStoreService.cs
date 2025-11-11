@@ -208,7 +208,7 @@ internal class ChromaVectorStoreService : IVectorStoreService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Delete collection error: " + ex.Message);
+            Console.WriteLine("Clear collection error: " + ex.Message);
             return false;
         }
     }

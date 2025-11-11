@@ -515,18 +515,13 @@ public class DocumentsController : Controller
     [HttpDelete("mcpRegistry")]
     public async Task<ActionResult> ClearMcpRegistryChunks()
     {
-        string collectionId = await _vectorStore.TryCreateCollection(MCP_REGISTRY_ID);
-        if (!string.IsNullOrEmpty(collectionId))
+        string collectionName = MCP_REGISTRY_ID + "_collection";
+        bool result = await _vectorStore.ClearCollectionAsync(collectionName);  // Here we delete collection byt it's name, not id.
+        if (result)
         {
-            bool result = await _vectorStore.ClearCollectionAsync(collectionId);
-            if (result)
-            {
-                return NoContent();
-            }
-
-            return BadRequest("Failed to delete collection id=" + collectionId);
+            return NoContent();
         }
 
-        return NotFound("Cannot find DB for McpRegistry.");
+        return BadRequest("Failed to delete collection name=" + collectionName);
     }
 }
