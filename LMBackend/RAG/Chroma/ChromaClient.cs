@@ -3935,7 +3935,7 @@ internal class UpdateCollectionRecordsResponse
 }
 
 
-internal class UpdateCollectionResponse
+public class UpdateCollectionResponse
 {
 
     [JsonExtensionData]

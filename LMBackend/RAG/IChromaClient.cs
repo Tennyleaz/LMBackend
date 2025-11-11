@@ -14,4 +14,5 @@ public interface IChromaClient
     Task<UpsertCollectionRecordsResponse> Collection_upsertAsync(string tenant, string database, string collection_id, UpsertCollectionRecordsPayload body);
     Task<QueryResponse> Collection_queryAsync(string tenant, string database, string collection_id, int? limit, int? offset, QueryRequestPayload body);
     Task<DeleteCollectionRecordsResponse> Collection_deleteAsync(string tenant, string database, string collection_id, DeleteCollectionRecordsPayload body);
+    Task<UpdateCollectionResponse> Delete_collectionAsync(string tenant, string database, string collection_id);
 }

@@ -203,10 +203,7 @@ internal class ChromaVectorStoreService : IVectorStoreService
         try
         {
             // Find records from document id in metadata
-            DeleteCollectionRecordsResponse deleteResponse = await _chromaClient.Collection_deleteAsync(TENANT, DATABASE, collectionId, new DeleteCollectionRecordsPayload
-            {
-                Ids = null  // Important! Empty array returns nothing!
-            });
+            UpdateCollectionResponse response = await _chromaClient.Delete_collectionAsync(TENANT, DATABASE, collectionId);
             return true;
         }
         catch (Exception ex)
