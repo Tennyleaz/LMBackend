@@ -156,7 +156,7 @@ public class DocumentsController : Controller
                     continue;
 
                 string chunkText = dto.ToString();
-                float[] embedding = await _llmClient.GetEmbedding(chunkText);
+                float[] embedding = await _llmClient.GetEmbedding(chunkText, dto.AltEmbeddingEndpoint);
                 if (embedding == null || embedding.Length == 0)
                 {
                     throw new Exception("Failed to get embeddings");

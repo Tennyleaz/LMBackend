@@ -27,6 +27,11 @@ public class McpServerChunkDto
     /// </summary>
     public List<McpTool> Tools { get; set; }
 
+    /// <summary>
+    /// Alternative embedding API URL (with full "/v1/embedding"). Default is null.
+    /// </summary>
+    public string AltEmbeddingEndpoint { get; set; }
+
     public override string ToString()
     {
         string result = $"ServerName: {ServerName},\ntype: {Type}\nsource: {Source}";

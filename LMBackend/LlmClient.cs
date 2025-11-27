@@ -26,7 +26,6 @@ internal class LlmClient : ILlmService
     public LlmClient(IDockerHelper dockerHelper, ISerpService serpService)
     {
         _httpClient = new HttpClient();
-        _httpClient.BaseAddress = new Uri(Constants.EMBEDDING_ENDPOINT);
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.LLM_KEY);
         _dockerHelper = dockerHelper;
         _serpService = serpService;
@@ -373,7 +372,7 @@ internal class LlmClient : ILlmService
         return text;
     }
 
-    public async Task<float[]> GetEmbedding(string text)
+    public async Task<float[]> GetEmbedding(string text, string altEndpoint = null)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -386,9 +385,16 @@ internal class LlmClient : ILlmService
             input = text,
             user = "tenny"
         };
+
+        string url;
+        if (!string.IsNullOrEmpty(altEndpoint))
+            url = altEndpoint;
+        else
+            url = Constants.EMBEDDING_ENDPOINT;
+
         try
         {
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/v1/embeddings", payload);
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync(url, payload);
             // "{"object":"error","message":"The model does not support Embeddings API","type":"BadRequestError","param":null,"code":400}"
             // "{"id":"embd-e46f57901d0b48a8951e1099df8375c7","object":"list","created":1752660182,"model":"Qwen/Qwen3-Embedding-0.6B","data":[{"index":0,"object":"embedding","embedding":[...]}]}
             EmbeddingResult result = await response.Content.ReadFromJsonAsync<EmbeddingResult>();
@@ -406,7 +412,7 @@ internal class LlmClient : ILlmService
         }
     }
 
-    public async Task<IEnumerable<float[]>> GetEmbeddingBatch(string[] text)
+    public async Task<IEnumerable<float[]>> GetEmbeddingBatch(string[] text, string altEndpoint = null)
     {
         if (text == null || text.Length == 0)
         {
@@ -420,9 +426,15 @@ internal class LlmClient : ILlmService
             user = "tenny"
         };
 
+        string url;
+        if (!string.IsNullOrEmpty(altEndpoint))
+            url = altEndpoint;
+        else
+            url = Constants.EMBEDDING_ENDPOINT;
+
         try
         {
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/v1/embeddings", payload);
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync(url, payload);
             // "{"object":"error","message":"The model does not support Embeddings API","type":"BadRequestError","param":null,"code":400}"
             // "{"id":"embd-e46f57901d0b48a8951e1099df8375c7","object":"list","created":1752660182,"model":"Qwen/Qwen3-Embedding-0.6B","data":[{"index":0,"object":"embedding","embedding":[...]}]}
             EmbeddingResult result = await response.Content.ReadFromJsonAsync<EmbeddingResult>();

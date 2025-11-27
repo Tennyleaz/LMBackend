@@ -9,6 +9,6 @@ public interface ILlmService
     public Task<GoogleSearchKeyword> GetGoogleSearchKeyword(string question);
     public Task<string> SummarizeWebpage(string html, string query);
     public Task<string> CorrectSpeechResult(string text);
-    public Task<float[]> GetEmbedding(string text);
-    public Task<IEnumerable<float[]>> GetEmbeddingBatch(string[] text);
+    public Task<float[]> GetEmbedding(string text, string altEndpoint = null);
+    public Task<IEnumerable<float[]>> GetEmbeddingBatch(string[] text, string altEndpoint = null);
 }
